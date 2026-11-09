@@ -1,934 +1,927 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww33400\viewh21000\viewkind0
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Suivi Budgétaire</title>
+<!-- Version 7 — 19/10/2026 : import JSON corrigé, période extensible + mois de départ, cumuls et vue mensuelle paramétrables, gestion des catégories -->
+<style>
+  :root { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:#f1f5f9; color:#1e293b; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; }
+  .wrap { max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+  header { background:linear-gradient(90deg,#6366f1,#8b5cf6); color:#fff; border-radius:16px; padding:22px 24px; }
+  header h1 { margin:0 0 4px; font-size:22px; }
+  header p { margin:0; color:#e0e7ff; font-size:14px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .kpi .t { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#64748b; }
+  .kpi .v { font-size:19px; font-weight:700; margin-top:4px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
+  h2 { font-size:14px; font-weight:600; color:#475569; margin:0 0 12px; }
+  label { font-size:12px; color:#64748b; display:block; margin-bottom:4px; }
+  input, select { width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#fff; margin-bottom:10px; }
+  input:focus, select:focus { outline:2px solid #a5b4fc; border-color:#6366f1; }
+  button.btn { background:#6366f1; color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:14px; font-weight:600; cursor:pointer; width:100%; }
+  button.btn:hover { background:#4f46e5; }
+  button.ghost { background:#fff; color:#6366f1; border:1px solid #c7d2fe; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  button.ghost:hover { background:#eef2ff; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; font-size:11px; text-transform:uppercase; color:#64748b; padding:10px 12px; background:#f8fafc; }
+  td { padding:9px 12px; border-top:1px solid #f1f5f9; }
+  .num { text-align:right; }
+  .del { color:#94a3b8; cursor:pointer; background:none; border:none; font-size:14px; }
+  .del:hover { color:#e11d48; }
+  .pill { color:#fff; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:500; }
+  .pos { color:#059669; } .neg { color:#e11d48; }
+  .bars .row { display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:12px; }
+  .bars .lbl { width:150px; flex-shrink:0; color:#475569; }
+  .bars .track { flex:1; background:#f1f5f9; border-radius:6px; height:18px; position:relative; }
+  .bars .fill { height:100%; border-radius:6px; }
+  .bars .fill.thin { position:absolute; top:0; left:0; height:8px; background:#c7d2fe; border-radius:6px; }
+  .bars .val { width:110px; text-align:right; flex-shrink:0; font-weight:600; color:#334155; }
+  .mois { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .mcase { border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px; text-align:center; transition:transform .15s, border-color .15s; cursor:pointer; }
+  .mcase:hover { transform:scale(1.04); }
+  .mcase.alerte { border-color:#fda4af; background:#fff1f2; }
+  .mcase.actif { border-color:#6366f1; background:#eef2ff; box-shadow:0 0 0 2px #c7d2fe; }
+  .mcase .mm { font-size:11px; font-weight:600; text-transform:uppercase; color:#64748b; }
+  .mcase .md { font-size:12px; color:#475569; margin-top:6px; line-height:1.5; }
+  .gauge { height:12px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+  .gauge > div { height:100%; border-radius:999px; background:linear-gradient(90deg,#6366f1,#8b5cf6); }
+  .note { font-size:11px; color:#94a3b8; margin-top:8px; }
+  .reset { background:none; border:none; color:#94a3b8; font-size:12px; text-decoration:underline; cursor:pointer; align-self:flex-start; }
+  .reset:hover { color:#475569; }
+  .big { font-size:26px; font-weight:700; }
+  .navmois { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px; }
+  .navmois .fleche { background:#fff; border:1px solid #cbd5e1; border-radius:8px; width:34px; height:34px; font-size:16px; cursor:pointer; color:#475569; }
+  .navmois .fleche:hover { background:#eef2ff; }
+  .budgetcat { display:flex; align-items:center; gap:10px; margin-bottom:7px; font-size:13px; }
+  .budgetcat .lbl { flex:1; display:flex; align-items:center; gap:8px; color:#475569; }
+  .budgetcat input { width:110px; margin:0; text-align:right; }
+  .budgetcat .cons { width:90px; text-align:right; font-size:11px; color:#64748b; flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💶 Suivi Budgétaire</h1>
+    
+  </header>
 
-\f0\fs24 \cf0 <!doctype html>\
-<html lang="fr">\
-<head>\
-<meta charset="UTF-8" />\
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />\
-<title>Suivi Budg\'e9taire</title>\
-<!-- Version 7 \'97 19/10/2026 : import JSON corrig\'e9, p\'e9riode extensible + mois de d\'e9part, cumuls et vue mensuelle param\'e9trables, gestion des cat\'e9gories -->\
-<style>\
-  :root \{ font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:#f1f5f9; color:#1e293b; \}\
-  * \{ box-sizing: border-box; \}\
-  body \{ margin:0; padding:16px; \}\
-  .wrap \{ max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:16px; \}\
-  header \{ background:linear-gradient(90deg,#6366f1,#8b5cf6); color:#fff; border-radius:16px; padding:22px 24px; \}\
-  header h1 \{ margin:0 0 4px; font-size:22px; \}\
-  header p \{ margin:0; color:#e0e7ff; font-size:14px; \}\
-  .kpis \{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; \}\
-  .card \{ background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.05); \}\
-  .kpi .t \{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#64748b; \}\
-  .kpi .v \{ font-size:19px; font-weight:700; margin-top:4px; \}\
-  .grid2 \{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; \}\
-  h2 \{ font-size:14px; font-weight:600; color:#475569; margin:0 0 12px; \}\
-  label \{ font-size:12px; color:#64748b; display:block; margin-bottom:4px; \}\
-  input, select \{ width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; background:#fff; margin-bottom:10px; \}\
-  input:focus, select:focus \{ outline:2px solid #a5b4fc; border-color:#6366f1; \}\
-  button.btn \{ background:#6366f1; color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:14px; font-weight:600; cursor:pointer; width:100%; \}\
-  button.btn:hover \{ background:#4f46e5; \}\
-  button.ghost \{ background:#fff; color:#6366f1; border:1px solid #c7d2fe; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; \}\
-  button.ghost:hover \{ background:#eef2ff; \}\
-  table \{ width:100%; border-collapse:collapse; font-size:13px; \}\
-  th \{ text-align:left; font-size:11px; text-transform:uppercase; color:#64748b; padding:10px 12px; background:#f8fafc; \}\
-  td \{ padding:9px 12px; border-top:1px solid #f1f5f9; \}\
-  .num \{ text-align:right; \}\
-  .del \{ color:#94a3b8; cursor:pointer; background:none; border:none; font-size:14px; \}\
-  .del:hover \{ color:#e11d48; \}\
-  .pill \{ color:#fff; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:500; \}\
-  .pos \{ color:#059669; \} .neg \{ color:#e11d48; \}\
-  .bars .row \{ display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:12px; \}\
-  .bars .lbl \{ width:150px; flex-shrink:0; color:#475569; \}\
-  .bars .track \{ flex:1; background:#f1f5f9; border-radius:6px; height:18px; position:relative; \}\
-  .bars .fill \{ height:100%; border-radius:6px; \}\
-  .bars .fill.thin \{ position:absolute; top:0; left:0; height:8px; background:#c7d2fe; border-radius:6px; \}\
-  .bars .val \{ width:110px; text-align:right; flex-shrink:0; font-weight:600; color:#334155; \}\
-  .mois \{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; \}\
-  .mcase \{ border:1px solid #e2e8f0; background:#f8fafc; border-radius:10px; padding:10px; text-align:center; transition:transform .15s, border-color .15s; cursor:pointer; \}\
-  .mcase:hover \{ transform:scale(1.04); \}\
-  .mcase.alerte \{ border-color:#fda4af; background:#fff1f2; \}\
-  .mcase.actif \{ border-color:#6366f1; background:#eef2ff; box-shadow:0 0 0 2px #c7d2fe; \}\
-  .mcase .mm \{ font-size:11px; font-weight:600; text-transform:uppercase; color:#64748b; \}\
-  .mcase .md \{ font-size:12px; color:#475569; margin-top:6px; line-height:1.5; \}\
-  .gauge \{ height:12px; background:#e2e8f0; border-radius:999px; overflow:hidden; \}\
-  .gauge > div \{ height:100%; border-radius:999px; background:linear-gradient(90deg,#6366f1,#8b5cf6); \}\
-  .note \{ font-size:11px; color:#94a3b8; margin-top:8px; \}\
-  .reset \{ background:none; border:none; color:#94a3b8; font-size:12px; text-decoration:underline; cursor:pointer; align-self:flex-start; \}\
-  .reset:hover \{ color:#475569; \}\
-  .big \{ font-size:26px; font-weight:700; \}\
-  .navmois \{ display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px; \}\
-  .navmois .fleche \{ background:#fff; border:1px solid #cbd5e1; border-radius:8px; width:34px; height:34px; font-size:16px; cursor:pointer; color:#475569; \}\
-  .navmois .fleche:hover \{ background:#eef2ff; \}\
-  .budgetcat \{ display:flex; align-items:center; gap:10px; margin-bottom:7px; font-size:13px; \}\
-  .budgetcat .lbl \{ flex:1; display:flex; align-items:center; gap:8px; color:#475569; \}\
-  .budgetcat input \{ width:110px; margin:0; text-align:right; \}\
-  .budgetcat .cons \{ width:90px; text-align:right; font-size:11px; color:#64748b; flex-shrink:0; \}\
-</style>\
-</head>\
-<body>\
-<div class="wrap">\
-  <header>\
-    <h1>\uc0\u55357 \u56502  Suivi Budg\'e9taire</h1>\
-    \
-  </header>\
-\
-  <div class="card">\
-    <div class="navmois">\
-      <button class="fleche" onclick="changeMois(-1)">\'8b</button>\
-      <select id="selMois" style="width:auto;min-width:190px;margin:0;text-align:center;font-weight:600;color:#4f46e5" onchange="setMois(this.value)"></select>\
-      <button class="fleche" onclick="changeMois(1)">\'9b</button>\
-    </div>\
-    <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">\
-      <button class="ghost" onclick="recopierMois()">\uc0\u55357 \u56516  Recopier le mois pr\'e9c\'e9dent</button>\
-      <button class="ghost" onclick="recopierType()">\uc0\u55357 \u56523  Recopier mon \'ab mois type \'bb</button>\
-    </div>\
-    <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap">\
-      <button class="ghost" style="border-color:#6366f1;color:#4f46e5;font-weight:700" onclick="choisirImport('fusion')">\uc0\u55357 \u56514  Importer JSON \'97 FUSIONNER</button>\
-      <button class="ghost" onclick="choisirImport('remplace')">\uc0\u55357 \u56514  Importer JSON \'97 REMPLACER</button>\
-      <input type="file" accept=".json" id="importFichier" style="display:none" onchange="importJSON(this)">\
-    </div>\
-    <p class="note" style="text-align:center">Fusion : ajoute les donn\'e9es d'un autre appareil sans rien effacer. Remplace : restaure une sauvegarde compl\'e8te.</p>\
-    <p class="note" style="text-align:center">En d\'e9but de mois : allouez vos enveloppes par cat\'e9gorie. Ensuite : saisissez uniquement les d\'e9penses r\'e9elles (libell\'e9 + cat\'e9gorie + montant).</p>\
-  </div>\
-\
-  <div class="kpis" id="kpis"></div>\
-\
-  <div class="grid2">\
-    <div class="card">\
-      <h2>\uc0\u55357 \u56787 \u65039  Enveloppes de <span id="titreMoisB"></span></h2>\
-      <div id="budgets"></div>\
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;font-weight:600;color:#475569">\
-        <span>Total allou\'e9</span><span id="totBudgets"></span>\
-      </div>\
-      <p class="note">Laissez \'e0 0 les cat\'e9gories non utilis\'e9es ce mois-ci.</p>\
-    </div>\
-    <div class="card">\
-      <h2>\uc0\u55357 \u56517  Consomm\'e9 vs enveloppe</h2>\
-      <div class="bars" id="bars"></div>\
-      <div class="note">Barre fine : enveloppe allou\'e9e \'b7 barre \'e9paisse : d\'e9penses r\'e9elles. Le chiffre de droite indique ce qu'il reste.</div>\
-    </div>\
-  </div>\
-\
-  <div class="grid2">\
-    <div class="card">\
-      <h2>\uc0\u10133  Saisir une d\'e9pense \'97 <span id="titreMois1"></span></h2>\
-      <label>Libell\'e9</label><input id="dLabel" placeholder="Ex : Courses Carrefour" />\
-      <label>Cat\'e9gorie</label><select id="dCat"></select>\
-      <label>Montant r\'e9el (\'80)</label><input id="dMontant" type="number" min="0" step="0.01" />\
-      <button class="btn" onclick="addDepense()">Ajouter</button>\
-    </div>\
-    <div class="card">\
-      <h2>\uc0\u55357 \u56496  Revenus \'97 <span id="titreMois2"></span></h2>\
-      <label>Libell\'e9</label><input id="rLabel" placeholder="Ex : Salaire, prime, CAF\'85" />\
-      <label>Montant (\'80)</label><input id="rMontant" type="number" min="0" step="0.01" />\
-      <button class="btn" onclick="addRevenu()">Ajouter</button>\
-      <div id="listeRevenus"></div>\
-    </div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55358 \u56830  D\'e9pens\'e9s par cat\'e9gorie \'97 <span id="titreMois3"></span></h2>\
-    <p class="note" style="margin-top:0">Chaque pav\'e9 liste les d\'e9penses du mois pour la cat\'e9gorie, avec la somme totale. Cliquez sur \uc0\u10005  pour supprimer une d\'e9pense.</p>\
-    <div id="catListes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55357 \u56541  M\'e9mo</h2>\
-    <p class="note" style="margin-top:0">Votre liste libre : pense-b\'eate, rappels, choses \'e0 v\'e9rifier\'85 Chaque saisie devient un point de la liste. Les m\'e9mos voyagent avec l'export JSON.</p>\
-    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">\
-      <input id="memoTexte" placeholder="Ex : v\'e9rifier le pr\'e9l\'e8vement assurance" style="flex:1;min-width:200px;margin-bottom:0" onkeydown="if(event.key==='Enter')addMemo()" />\
-      <button class="ghost" onclick="addMemo()" style="margin-bottom:1px">\uc0\u10133  Ajouter</button>\
-    </div>\
-    <div id="memoListe" style="margin-top:12px"></div>\
-  </div>\
-\
-  <div class="grid2">\
-    <div class="card">\
-      <h2>\uc0\u55356 \u57263  \'c9quilibre du mois</h2>\
-      <div id="ecart"></div>\
-    </div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55357 \u56538  Cumuls \'97 du <select id="cumDebut" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> au <select id="cumFin" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select></h2>\
-    <p class="note" style="margin-top:0">Enveloppes allou\'e9es et d\'e9penses r\'e9alis\'e9es, cumul\'e9es sur la p\'e9riode choisie.</p>\
-    <div id="cumuls" style="overflow-x:auto"></div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55357 \u56787 \u65039  Vue mensuelle \'97 du <select id="vueDebut" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> au <select id="vueFin" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> <span class="note" style="font-weight:400">(cliquez sur un mois pour l'ouvrir)</span></h2>\
-    <div class="mois" id="cal"></div>\
-    <div id="totalAnnee"></div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55357 \u56520  D\'e9penses par cat\'e9gorie et par mois</h2>\
-    <p class="note" style="margin-top:0">Une ligne par cat\'e9gorie : total des d\'e9penses de chaque mois de la p\'e9riode. Le trait pointill\'e9 rep\'e8re le mois affich\'e9.</p>\
-    <div id="courbeCats" style="overflow-x:auto"></div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u9881 \u65039  G\'e9rer les cat\'e9gories</h2>\
-    <button class="ghost" onclick="toggleCatAdmin()" id="btnCatAdmin">\uc0\u9656  Afficher la gestion des cat\'e9gories</button>\
-    <div id="catAdmin" style="display:none;margin-top:14px">\
-      <p class="note" style="margin-top:0">Renommez, ajoutez ou supprimez des cat\'e9gories sans perdre vos donn\'e9es. Les enveloppes et d\'e9penses suivent automatiquement.</p>\
-      <div id="catAdminList"></div>\
-      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:10px">\
-        <div style="flex:1;min-width:140px"><label>Nouvelle cat\'e9gorie</label><input id="newCatLabel" placeholder="Ex : Animaux" style="margin-bottom:0" /></div>\
-        <div><label>Couleur</label><input type="color" id="newCatColor" value="#f97316" style="width:46px;height:38px;padding:2px;margin-bottom:0" /></div>\
-        <button class="ghost" onclick="addCat()" style="margin-bottom:1px">\uc0\u10133  Ajouter</button>\
-      </div>\
-    </div>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u10133  \'c9tendre la p\'e9riode</h2>\
-    <p class="note" style="margin-top:0" id="periodeInfo"></p>\
-    <button class="ghost" onclick="addMois()">\uc0\u10133  Ajouter un mois apr\'e8s <span id="dernierMois"></span></button>\
-    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:12px">\
-      <div><label for="debutPeriode">Mois de d\'e9part de la p\'e9riode</label>\
-        <input type="month" id="debutPeriode" style="margin-bottom:0" /></div>\
-      <button class="ghost" onclick="setDebutPeriode()" style="margin-bottom:1px">\uc0\u55357 \u56580  Reconstruire la p\'e9riode depuis ce mois</button>\
-    </div>\
-    <p class="note" style="margin-bottom:0">Utile apr\'e8s un import JSON : si vos donn\'e9es semblent invisibles, indiquez ici le mois de d\'e9part de vos donn\'e9es (vos mois et d\'e9penses sont conserv\'e9s, seule la fen\'eatre affich\'e9e change).</p>\
-  </div>\
-\
-  <div class="card">\
-    <h2>\uc0\u55357 \u56548  Export CSV vers un tableur (Excel, Numbers, LibreOffice)</h2>\
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">\
-      <div style="flex:1;min-width:160px">\
-        <label>Du mois</label>\
-        <select id="expDebut" style="margin-bottom:0"></select>\
-      </div>\
-      <div style="flex:1;min-width:160px">\
-        <label>Au mois</label>\
-        <select id="expFin" style="margin-bottom:0"></select>\
-      </div>\
-      <button class="ghost" onclick="exportCSV()" style="margin-bottom:1px">\uc0\u55357 \u56516  T\'e9l\'e9charger le CSV</button>\
-    </div>\
-    <p class="note">S\'e9pareur \'ab ; \'bb compatible Excel / Numbers en fran\'e7ais. Revenus, enveloppes et d\'e9penses d\'e9taill\'e9es par mois.</p>\
-  </div>\
-\
-  <button class="reset" onclick="exportJSON()">\uc0\u55357 \u56510  Exporter mes donn\'e9es (JSON)</button>\
-  <button class="reset" onclick="viderMois()">\uc0\u55357 \u56785 \u65039  Vider le mois affich\'e9</button>\
-  <button class="reset" onclick="resetAll()">\uc0\u55358 \u56825  Tout effacer (partir de z\'e9ro)</button>\
-  <button class="reset" onclick="resetExemple()">\uc0\u55357 \u56580  R\'e9initialiser avec les valeurs d'exemple</button>\
-  <button class="reset" onclick="window.print()">\uc0\u55357 \u56744 \u65039  Imprimer</button>\
-</div>\
-\
-<script>\
-window.onerror = function(msg, src, line) \{\
-  const d = document.getElementById("diagjs");\
-  if (d) \{ d.style.background = "#e11d48"; d.textContent = "\uc0\u9940  Erreur JavaScript : " + msg + " (ligne " + line + ")"; \}\
-  return false;\
-\};\
-const CATS_DEFAUT = [\
-  \{id:"logement",label:"Logement",color:"#6366f1"\},\
-  \{id:"courses",label:"Courses / Alimentation",color:"#10b981"\},\
-  \{id:"transport",label:"Transport",color:"#f59e0b"\},\
-  \{id:"enfants",label:"Enfants",color:"#ec4899"\},\
-  \{id:"sante",label:"Sant\'e9",color:"#06b6d4"\},\
-  \{id:"loisirs",label:"Loisirs",color:"#8b5cf6"\},\
-  \{id:"abonnements",label:"Abonnements",color:"#ef4444"\},\
-  \{id:"impots",label:"Imp\'f4ts / Taxes",color:"#78716c"\},\
-  \{id:"dons",label:"Dons",color:"#f472b6"\},\
-  \{id:"remboursements",label:"Remboursements emprunts",color:"#0ea5e9"\},\
-  \{id:"travaux",label:"Travaux / Maintenance",color:"#d97706"\},\
-  \{id:"epargne",label:"\'c9pargne",color:"#84cc16"\},\
-  \{id:"autre",label:"Autre",color:"#94a3b8"\},\
-];\
-const NOMS_MOIS = ["Janvier","F\'e9vrier","Mars","Avril","Mai","Juin","Juillet","Ao\'fbt","Septembre","Octobre","Novembre","D\'e9cembre"];\
-const fmt = n => new Intl.NumberFormat("fr-FR",\{style:"currency",currency:"EUR",maximumFractionDigits:0\}).format(n);\
-const esc = s => String(s).replace(/[&<>"']/g, c => (\{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"\}[c]));\
-const key = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");\
-const parseKey = k => \{ const [y,m] = k.split("-").map(Number); return new Date(y, m-1, 1); \};\
-\
-const DEBUT = new Date(2026, 9, 1); // p\'e9riode commen\'e7ant en octobre 2026\
-let KEYS = Array.from(\{length:12\}, (_,i) => key(new Date(DEBUT.getFullYear(), DEBUT.getMonth()+i, 1)));\
-\
-// --- Structure d'un mois : \{ budgets: \{catId: montant\}, revenus: [...], depenses: [\{id,cat,label,montant\}] ---\
-function moisVide() \{ return \{ budgets: \{\}, revenus: [], depenses: [] \}; \}\
-\
-function moisTypeDefaut() \{\
-  return \{\
-    budgets: \{logement:950, courses:550, transport:220, enfants:170, abonnements:90, loisirs:150, epargne:200\},\
-    revenus: [\
-      \{id:1,label:"Salaire 1",montant:2300\},\
-      \{id:2,label:"Salaire 2",montant:1400\},\
-      \{id:3,label:"Allocations familiales",montant:140\},\
-    ],\
-    depenses: [],\
-  \};\
-\}\
-\
-// Migration depuis l'ancien format (depenses avec prevu)\
-function migrer(m) \{\
-  if (!m) return moisVide();\
-  if (m.budgets) return m;\
-  const nv = moisVide();\
-  (m.depenses || []).forEach(d => \{\
-    const c = CATS.find(x => x.id === d.cat) || CATS[CATS.length-1];\
-    nv.budgets[c.id] = (nv.budgets[c.id] || 0) + (d.prevu || 0);\
-  \});\
-  nv.revenus = m.revenus || [];\
-  nv.depenses = (m.depenses || []).map(d => (\{id:d.id, cat:d.cat, label:d.label, montant:d.montant\}));\
-  return nv;\
-\}\
-\
-let data;\
-// === VOS DONN\'c9ES INT\'c9GR\'c9ES (charg\'e9es automatiquement \'e0 l'ouverture) ===\
-const DONNEES_INTEGREES = \{"moisType":\{"budgets":\{\},"revenus":[],"depenses":[]\},"mois":\{\}\};\
-// --- Stockage blind\'e9 : fonctionne m\'eame si le navigateur bloque localStorage (fichiers locaux sur Safari/Chrome) ---\
-const MEM_STOCKAGE = \{\};\
-function lsGet(k) \{ try \{ return localStorage.getItem(k); \} catch(e) \{ return (k in MEM_STOCKAGE) ? MEM_STOCKAGE[k] : null; \} \}\
-function lsSet(k, v) \{ MEM_STOCKAGE[k] = v; try \{ localStorage.setItem(k, v); \} catch(e) \{\} \}\
-function lsDel(k) \{ delete MEM_STOCKAGE[k]; try \{ localStorage.removeItem(k); \} catch(e) \{\} \}\
-const STOCKAGE_ACTIF = (() => \{ try \{ localStorage.setItem("__test__", "1"); localStorage.removeItem("__test__"); return true; \} catch(e) \{ return false; \} \})();\
-\
-let stockees = null;\
-try \{\
-  stockees = JSON.parse(lsGet("budgetFamilleMois")) || null;\
-\} catch(e) \{ stockees = null; \}\
-// Ce fichier EST vos donn\'e9es : on les charge toujours par d\'e9faut\
-data = JSON.parse(JSON.stringify(DONNEES_INTEGREES));\
-const stockeesOntVosDonnees = stockees && stockees.mois && stockees.mois["2026-10"] && stockees.mois["2026-10"].depenses && stockees.mois["2026-10"].depenses.some(d => d.label === "clinique");\
-if (stockeesOntVosDonnees) \{\
-  // Le navigateur contient d\'e9j\'e0 vos donn\'e9es (peut-\'eatre plus r\'e9centes que l'instantan\'e9) \uc0\u8594  les garder\
-  data = stockees;\
-\} else \{\
-  lsSet("budgetFamilleMois", JSON.stringify(data));\
-\}\
-if (!data || !data.mois) \{\
-  const t = moisTypeDefaut();\
-  data = \{ moisType: t, mois: \{ [KEYS[0]]: JSON.parse(JSON.stringify(t)) \} \};\
-\}\
-data.moisType = migrer(data.moisType);\
-Object.keys(data.mois).forEach(k => data.mois[k] = migrer(data.mois[k]));\
-\
-// Cat\'e9gories personnalisables (stock\'e9es avec les donn\'e9es)\
-let CATS = Array.isArray(data.cats) && data.cats.length ? data.cats : JSON.parse(JSON.stringify(CATS_DEFAUT));\
-data.cats = CATS;\
-\
-// P\'e9riode personnalis\'e9e (mois \'e9tendus au-del\'e0 des 12 premiers)\
-if (Array.isArray(data.keys) && data.keys.length >= 12) KEYS = data.keys.slice();\
-data.keys = KEYS;\
-\
-function addMois() \{\
-  const dernier = parseKey(KEYS[KEYS.length-1]);\
-  const suivant = new Date(dernier.getFullYear(), dernier.getMonth()+1, 1);\
-  const k = key(suivant);\
-  if (KEYS.includes(k)) return alert("Ce mois existe d\'e9j\'e0.");\
-  KEYS.push(k);\
-  data.keys = KEYS;\
-  refreshSelectsMois();\
-  updatePeriodeInfo();\
-  save();\
-\}\
-function refreshSelectsMois() \{\
-  document.getElementById("expDebut").innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===moisCourant?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  document.getElementById("expFin").innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===KEYS[KEYS.length-1]?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  refreshSelectsCumuls();\
-\}\
-\
-// \'c0 l'ouverture, afficher directement le mois en cours s'il fait partie de la p\'e9riode\
-const MOIS_ACTUEL = key(new Date());\
-let moisCourant = KEYS.includes(MOIS_ACTUEL) ? MOIS_ACTUEL : KEYS[0];\
-const TYPE_KEY = "__type__";\
-const estType = () => moisCourant === TYPE_KEY;\
-function cibleData() \{ return estType() ? data.moisType : (data.mois[moisCourant] = data.mois[moisCourant] || moisVide()); \}\
-function labelCible() \{ return estType() ? "Mois type (mod\'e8le)" : labelMois(moisCourant); \}\
-function labelMois(k) \{\
-  const d = parseKey(k);\
-  return NOMS_MOIS[d.getMonth()] + " " + d.getFullYear();\
-\}\
-function totPrevu(m) \{ return CATS.reduce((s,c) => s + (Number(m.budgets[c.id]) || 0), 0); \}\
-function totRev(m) \{ return m.revenus.reduce((s,r) => s + r.montant, 0); \}\
-function totReal(m) \{ return m.depenses.reduce((s,d) => s + d.montant, 0); \}\
-function consCat(m, catId) \{ return m.depenses.filter(d => d.cat === catId).reduce((s,d) => s + d.montant, 0); \}\
-\
-function save() \{ data.cats = CATS; data.keys = KEYS; lsSet("budgetFamilleMois", JSON.stringify(data)); refreshCatSelects(); render(); \}\
-\
-// --- Gestion des cat\'e9gories ---\
-function toggleCatAdmin() \{\
-  const d = document.getElementById("catAdmin");\
-  const open = d.style.display !== "none";\
-  d.style.display = open ? "none" : "block";\
-  document.getElementById("btnCatAdmin").textContent = open ? "\uc0\u9656  Afficher la gestion des cat\'e9gories" : "\u9662  Masquer la gestion des cat\'e9gories";\
-\}\
-function renameCat(id, label) \{\
-  const c = CATS.find(x => x.id === id);\
-  if (!c) return;\
-  c.label = label.trim() || c.label;\
-  save();\
-\}\
-function addCat() \{\
-  const label = document.getElementById("newCatLabel").value.trim();\
-  if (!label) return alert("Donnez un nom \'e0 la cat\'e9gorie.");\
-  let base = label.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"").slice(0,12) || "cat";\
-  let id = base, i = 1;\
-  while (CATS.some(c => c.id === id)) id = base + (++i);\
-  CATS.push(\{id, label, color: document.getElementById("newCatColor").value\});\
-  document.getElementById("newCatLabel").value = "";\
-  save();\
-\}\
-function delCat(id) \{\
-  const c = CATS.find(x => x.id === id);\
-  if (!c) return;\
-  if (CATS.length <= 1) return alert("Il faut garder au moins une cat\'e9gorie.");\
-  const autres = CATS.filter(x => x.id !== id);\
-  const choix = prompt("Supprimer \'ab " + c.label + " \'bb ?\\n\\nLes d\'e9penses et enveloppes de cette cat\'e9gorie seront transf\'e9r\'e9es vers : indiquez le num\'e9ro d'une cat\'e9gorie ci-dessous (ou laissez vide pour les perdre).\\n\\n" + autres.map((x,i) => (i+1) + ". " + x.label).join("\\n"));\
-  if (choix === null) return;\
-  const cible = autres[parseInt(choix,10) - 1];\
-  const tousMois = [data.moisType, ...Object.values(data.mois)];\
-  tousMois.forEach(m => \{\
-    if (!m || !m.depenses) return;\
-    m.depenses.forEach(d => \{ if (d.cat === id) d.cat = cible ? cible.id : "autre_inconnu"; \});\
-    if (m.budgets && m.budgets[id] !== undefined) \{\
-      if (cible) m.budgets[cible.id] = (m.budgets[cible.id] || 0) + m.budgets[id];\
-      delete m.budgets[id];\
-    \}\
-  \});\
-  if (!cible) tousMois.forEach(m => \{ if (m && m.depenses) m.depenses = m.depenses.filter(d => d.cat !== "autre_inconnu"); \});\
-  CATS = CATS.filter(x => x.id !== id);\
-  if (document.getElementById("dCat").value === id) document.getElementById("dCat").value = CATS[0].id;\
-  save();\
-  alert(cible ? "Cat\'e9gorie supprim\'e9e. Ses d\'e9penses et enveloppes ont \'e9t\'e9 transf\'e9r\'e9es vers \'ab " + cible.label + " \'bb." : "Cat\'e9gorie supprim\'e9e.");\
-\}\
-function renderCatAdmin() \{\
-  document.getElementById("catAdminList").innerHTML = CATS.map(c => `\
-    <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-top:1px solid #f1f5f9">\
-      <input type="color" value="$\{c.color\}" onchange="recolorCat('$\{c.id\}', this.value)" style="width:36px;height:32px;padding:2px;flex-shrink:0" title="Couleur" />\
-      <input value="$\{esc(c.label)\}" onchange="renameCat('$\{c.id\}', this.value)" style="flex:1;margin:0" />\
-      <button class="del" onclick="delCat('$\{c.id\}')" title="Supprimer">\uc0\u55357 \u56785 \u65039 </button>\
-    </div>`).join("");\
-\}\
-function recolorCat(id, color) \{\
-  const c = CATS.find(x => x.id === id);\
-  if (c) \{ c.color = color; save(); \}\
-\}\
-\
-function setMois(k) \{ moisCourant = k; render(); \}\
-function changeMois(dir) \{\
-  if (estType()) \{ moisCourant = KEYS[dir > 0 ? 0 : 0]; return render(); \}\
-  const i = Math.max(0, Math.min(KEYS.length-1, KEYS.indexOf(moisCourant) + dir));\
-  moisCourant = KEYS[i]; render();\
-\}\
-function recopierMois() \{\
-  if (estType()) return alert("S\'e9lectionnez un mois r\'e9el pour recopier le mois pr\'e9c\'e9dent.");\
-  const i = KEYS.indexOf(moisCourant);\
-  if (i <= 0) return alert("Pas de mois pr\'e9c\'e9dent dans la p\'e9riode affich\'e9e.");\
-  if (!confirm("Remplacer \'ab " + labelMois(moisCourant) + " \'bb par le contenu de \'ab " + labelMois(KEYS[i-1]) + " \'bb (enveloppes, revenus et d\'e9penses) ?")) return;\
-  data.mois[moisCourant] = JSON.parse(JSON.stringify(cibleDataDe(KEYS[i-1])));\
-  save();\
-\}\
-function cibleDataDe(k) \{ return data.mois[k] = data.mois[k] || moisVide(); \}\
-function recopierType() \{\
-  if (estType()) return alert("S\'e9lectionnez d'abord un mois r\'e9el, puis recopiez le mois type dedans.");\
-  const cible = cibleData();\
-  const nbDep = cible.depenses.length;\
-  let msg = "Appliquer votre \'ab mois type \'bb \'e0 \'ab " + labelMois(moisCourant) + " \'bb ?\\n\\n" +\
-    "Les enveloppes et revenus du mois seront remplac\'e9s par ceux du mois type.\\n";\
-  if (nbDep > 0) \{\
-    msg += "\\n\uc0\u9989  Les " + nbDep + " d\'e9pense(s) d\'e9j\'e0 saisies ce mois-ci seront CONSERV\'c9ES.";\
-    const full = confirm(msg + "\\n\\nOK = conserver les d\'e9penses saisies\\nAnnuler = choisir un remplacement complet");\
-    if (full) \{\
-      cible.budgets = JSON.parse(JSON.stringify(data.moisType.budgets || \{\}));\
-      cible.revenus = JSON.parse(JSON.stringify(data.moisType.revenus || []));\
-      save();\
-    \} else \{\
-      if (confirm("\uc0\u9888 \u65039  Remplacement COMPLET : enveloppes, revenus ET les " + nbDep + " d\'e9pense(s) saisies seront \'e9cras\'e9s.\\n\\nConfirmer ?")) \{\
-        data.mois[moisCourant] = JSON.parse(JSON.stringify(data.moisType));\
-        save();\
-      \}\
-    \}\
-    return;\
-  \}\
-  if (confirm(msg)) \{\
-    cible.budgets = JSON.parse(JSON.stringify(data.moisType.budgets || \{\}));\
-    cible.revenus = JSON.parse(JSON.stringify(data.moisType.revenus || []));\
-    save();\
-  \}\
-\}\
-\
-function addRevenu() \{\
-  const label = document.getElementById("rLabel").value.trim();\
-  const montant = parseFloat(document.getElementById("rMontant").value);\
-  if (!label || isNaN(montant)) return alert("Renseignez un libell\'e9 et un montant valide.");\
-  cibleData().revenus.push(\{id:Date.now(), label, montant\});\
-  document.getElementById("rLabel").value = ""; document.getElementById("rMontant").value = "";\
-  save();\
-\}\
-function addDepense() \{\
-  const label = document.getElementById("dLabel").value.trim();\
-  const cat = document.getElementById("dCat").value;\
-  const montant = parseFloat(document.getElementById("dMontant").value);\
-  if (!label || isNaN(montant) || montant <= 0) return alert("Renseignez un libell\'e9 et un montant r\'e9el valide.");\
-  cibleData().depenses.push(\{id:Date.now(), cat, label, montant\});\
-  document.getElementById("dLabel").value = ""; document.getElementById("dMontant").value = "";\
-  save();\
-\}\
-function delRev(id) \{ const m = cibleData(); m.revenus = m.revenus.filter(r => r.id !== id); save(); \}\
-function delDep(id) \{ const m = cibleData(); m.depenses = m.depenses.filter(d => d.id !== id); save(); \}\
-function setBudget(catId, val) \{\
-  const m = cibleData();\
-  const v = parseFloat(val);\
-  if (isNaN(v) || v <= 0) delete m.budgets[catId]; else m.budgets[catId] = v;\
-  save();\
-\}\
-function resetAll() \{\
-  if (!confirm("Tout effacer et partir de z\'e9ro ?\\n\\n(Enveloppes, revenus, d\'e9penses, mois type et tous les mois seront vid\'e9s \'97 exportez vos donn\'e9es avant si besoin)")) return;\
-  data = \{ moisType: moisVide(), mois: \{\} \};\
-  moisCourant = KEYS[0];\
-  save();\
-\}\
-function resetExemple() \{\
-  if (!confirm("R\'e9initialiser avec les valeurs d'exemple ?\\n\\n(Vos donn\'e9es actuelles seront perdues \'97 exportez-les avant si besoin)")) return;\
-  lsDel("budgetFamilleMois");\
-  location.reload();\
-\}\
-function viderMois() \{\
-  if (!confirm("Vider compl\'e8tement \'ab " + labelCible() + " \'bb (enveloppes, revenus et d\'e9penses) ?")) return;\
-  if (estType()) data.moisType = moisVide();\
-  else data.mois[moisCourant] = moisVide();\
-  save();\
-\}\
-function exportJSON() \{\
-  const blob = new Blob([JSON.stringify(data, null, 2)], \{type:"application/json"\});\
-  const a = document.createElement("a");\
-  a.href = URL.createObjectURL(blob);\
-  a.download = "budget-famille.json";\
-  a.click();\
-\}\
-// Fusion de deux exports : ajoute ce qui manque (par id unique), ne supprime rien.\
-// Id\'e9al pour saisir des d\'e9penses sur t\'e9l\'e9phone puis les ramener sur l'ordinateur.\
-function fusionner(base, recu) \{\
-  const fusionListe = (a, b) => \{\
-    const ids = new Set((a || []).map(x => x.id));\
-    return (a || []).concat((b || []).filter(x => !ids.has(x.id)));\
-  \};\
-  const fusionMois = (mb, mr) => \{\
-    mb = mb || moisVide(); mr = mr || moisVide();\
-    const m = \{\
-      revenus: fusionListe(mb.revenus, mr.revenus),\
-      depenses: fusionListe(mb.depenses, mr.depenses),\
-      budgets: Object.assign(\{\}, mb.budgets || \{\}),\
-    \};\
-    Object.keys(mr.budgets || \{\}).forEach(k => \{\
-      m.budgets[k] = Math.max(Number(m.budgets[k]) || 0, Number(mr.budgets[k]) || 0);\
-    \});\
-    return m;\
-  \};\
-  const res = \{ mois: \{\}, keys: [] \};\
-  res.moisType = fusionMois(base.moisType, recu.moisType);\
-  const tousMois = new Set([...(base.keys || []), ...Object.keys(base.mois || \{\}), ...(recu.keys || []), ...Object.keys(recu.mois || \{\})]);\
-  tousMois.forEach(k => res.mois[k] = fusionMois(base.mois && base.mois[k], recu.mois && recu.mois[k]));\
-  res.keys = Array.from(new Set([...(recu.keys || []), ...(base.keys || [])])).sort();\
-  if (res.keys.length < 12) \{ /* p\'e9riode minimale conserv\'e9e via KEYS plus bas */ \}\
-  res.cats = Array.isArray(recu.cats) && recu.cats.length ? recu.cats : base.cats;\
-  res.memo = fusionListe(base.memo || [], recu.memo || []);\
-  return res;\
-\}\
-// M\'e9mo : ajout et suppression\
-function addMemo() \{\
-  const inp = document.getElementById("memoTexte");\
-  if (!inp) return;\
-  const t = inp.value.trim();\
-  if (!t) return;\
-  if (!Array.isArray(data.memo)) data.memo = [];\
-  data.memo.push(\{id: Date.now(), texte: t\});\
-  inp.value = "";\
-  save();\
-\}\
-function delMemo(id) \{\
-  data.memo = (data.memo || []).filter(m => m.id !== id);\
-  save();\
-\}\
-let MODE_IMPORT = "fusion";\
-function choisirImport(mode) \{\
-  MODE_IMPORT = mode;\
-  document.getElementById("importFichier").click();\
-\}\
-function importJSON(input) \{\
-  const f = input.files[0];\
-  if (!f) return;\
-  const reader = new FileReader();\
-  reader.onload = () => \{\
-    try \{\
-      const parsed = JSON.parse(reader.result);\
-      if (!parsed.mois) throw 0;\
-      const fusion = MODE_IMPORT === "fusion";\
-      if (fusion) \{\
-        data = fusionner(data, parsed);\
-      \} else \{\
-        data = parsed;\
-      \}\
-      CATS = Array.isArray(data.cats) && data.cats.length ? data.cats : JSON.parse(JSON.stringify(CATS_DEFAUT));\
-      data.cats = CATS;\
-      if (Array.isArray(data.keys) && data.keys.length >= 12) KEYS = data.keys.slice();\
-      data.keys = KEYS;\
-      if (!KEYS.includes(moisCourant)) moisCourant = KEYS[0];\
-      refreshCatSelects();\
-      refreshSelectsMois();\
-      updatePeriodeInfo();\
-      data.moisType = migrer(data.moisType);\
-      Object.keys(data.mois).forEach(k => data.mois[k] = migrer(data.mois[k]));\
-      save();\
-    \} catch(e) \{ alert("Fichier invalide."); \}\
-  \};\
-  reader.readAsText(f);\
-\}\
-function exportCSV() \{\
-  const debut = document.getElementById("expDebut").value;\
-  const fin = document.getElementById("expFin").value;\
-  if (KEYS.indexOf(fin) < KEYS.indexOf(debut)) return alert("Le mois de fin doit \'eatre apr\'e8s le mois de d\'e9but.");\
-  const periode = KEYS.filter(k => KEYS.indexOf(k) >= KEYS.indexOf(debut) && KEYS.indexOf(k) <= KEYS.indexOf(fin));\
-  const q = s => `"$\{String(s).replace(/"/g,'""')\}"`;\
-  const n = v => Number(v || 0).toLocaleString("fr-FR");\
-  const lignes = [["Mois","Type","Cat\'e9gorie","Libell\'e9","Montant (\'80)"].join(";")];\
-  periode.forEach(k => \{\
-    const m = cibleDataDe(k);\
-    const lbl = labelMois(k);\
-    m.revenus.forEach(r => lignes.push([q(lbl),"Revenu","-",q(r.label),n(r.montant)].join(";")));\
-    CATS.forEach(c => \{\
-      if (m.budgets[c.id]) lignes.push([q(lbl),"Enveloppe",q(c.label),"Budget allou\'e9",n(m.budgets[c.id])].join(";"));\
-    \});\
-    m.depenses.forEach(d => \{\
-      const c = CATS.find(x => x.id === d.cat) || CATS[CATS.length-1];\
-      lignes.push([q(lbl),"D\'e9pense",q(c.label),q(d.label),n(d.montant)].join(";"));\
-    \});\
-    lignes.push([q(lbl),"TOTAL","Total revenus","", n(totRev(m))].join(";"));\
-    lignes.push([q(lbl),"TOTAL","Total enveloppes","", n(totPrevu(m))].join(";"));\
-    lignes.push([q(lbl),"TOTAL","Total d\'e9penses r\'e9alis\'e9es","", n(totReal(m))].join(";"));\
-    lignes.push([q(lbl),"TOTAL","Non allou\'e9 (revenus \uc0\u8722  enveloppes)","", n(totRev(m) - totPrevu(m))].join(";"));\
-    lignes.push("");\
-  \});\
-  const csv = "\\uFEFF" + lignes.join("\\r\\n");\
-  const blob = new Blob([csv], \{type:"text/csv;charset=utf-8"\});\
-  const a = document.createElement("a");\
-  a.href = URL.createObjectURL(blob);\
-  a.download = `budget-famille_$\{debut\}_$\{fin\}.csv`;\
-  a.click();\
-\}\
-\
-function render() \{\
-  // Courbe des d\'e9penses par cat\'e9gorie et par mois (toute la p\'e9riode)\
-  function renderCourbeCats() \{\
-    const cont = document.getElementById("courbeCats");\
-    if (!cont) return;\
-    const n = KEYS.length;\
-    const catsActives = CATS.filter(c => KEYS.some(k => consCat(cibleDataDe(k), c.id) > 0));\
-    if (!catsActives.length) \{ cont.innerHTML = "<p class='note'>Aucune d\'e9pense sur la p\'e9riode.</p>"; return; \}\
-    const W = Math.max(640, n * 70), H = 270, padL = 48, padR = 14, padT = 14, padB = 32;\
-    const maxV = Math.max(1, ...catsActives.flatMap(c => KEYS.map(k => consCat(cibleDataDe(k), c.id))));\
-    const x = i => padL + (n === 1 ? 0 : i * (W - padL - padR) / (n - 1));\
-    const y = v => H - padB - (v / maxV) * (H - padT - padB);\
-    const grille = [0, 0.25, 0.5, 0.75, 1].map(t => \{\
-      const v = maxV * t;\
-      return `<line x1="$\{padL\}" y1="$\{y(v).toFixed(1)\}" x2="$\{W - padR\}" y2="$\{y(v).toFixed(1)\}" stroke="#f1f5f9"/>` +\
-        `<text x="$\{padL - 6\}" y="$\{(y(v) + 3).toFixed(1)\}" text-anchor="end" font-size="9" fill="#94a3b8">$\{Math.round(v)\}</text>`;\
-    \}).join("");\
-    const axeX = KEYS.map((k, i) => \{\
-      const d = parseKey(k);\
-      const lbl = NOMS_MOIS[d.getMonth()].slice(0, 3) + " " + String(d.getFullYear()).slice(2);\
-      return `<text x="$\{x(i).toFixed(1)\}" y="$\{H - padB + 16\}" text-anchor="middle" font-size="9" fill="#94a3b8">$\{lbl\}</text>`;\
-    \}).join("");\
-    const courbes = catsActives.map(c => \{\
-      const pts = KEYS.map((k, i) => `$\{x(i).toFixed(1)\},$\{y(consCat(cibleDataDe(k), c.id)).toFixed(1)\}`);\
-      return `<polyline points="$\{pts.join(" ")\}" fill="none" stroke="$\{c.color\}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;\
-    \}).join("");\
-    const idx = estType() ? -1 : KEYS.indexOf(moisCourant);\
-    const curseur = idx >= 0 ? `<line x1="$\{x(idx).toFixed(1)\}" y1="$\{padT\}" x2="$\{x(idx).toFixed(1)\}" y2="$\{H - padB\}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>` : "";\
-    const legende = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:12px">` +\
-      catsActives.map(c => `<span style="display:flex;align-items:center;gap:5px;color:#475569"><span class="pill" style="background:$\{c.color\}">&nbsp;</span>$\{c.label\}</span>`).join("") + `</div>`;\
-    cont.innerHTML = `<svg viewBox="0 0 $\{W\} $\{H\}" width="100%" style="min-width:$\{W\}px;display:block" preserveAspectRatio="xMidYMid meet">$\{grille\}$\{axeX\}$\{courbes\}$\{curseur\}</svg>$\{legende\}`;\
-  \}\
-  // M\'e9mo libre : chaque saisie devient un point de la liste\
-  function renderMemo() \{\
-    const el = document.getElementById("memoListe");\
-    if (!el) return;\
-    const liste = Array.isArray(data.memo) ? data.memo : [];\
-    el.innerHTML = liste.length ? liste.map(m => `\
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f1f5f9;font-size:13px">\
-        <span style="display:flex;gap:7px;color:#475569"><span style="color:#6366f1">\'95</span>$\{esc(m.texte)\}</span>\
-        <button class="del" onclick="delMemo($\{m.id\})" title="Supprimer">\uc0\u10005 </button>\
-      </div>`).join("") : "<p class='note'>Aucun m\'e9mo pour l'instant.</p>";\
-  \}\
-\
-  const sel = document.getElementById("selMois");\
-  sel.innerHTML = `<option value="$\{TYPE_KEY\}" $\{estType()?"selected":""\}>\uc0\u55358 \u56809  Mois type (mod\'e8le)</option>` +\
-    KEYS.map(k => `<option value="$\{k\}" $\{k===moisCourant?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  const lblC = labelCible();\
-  document.getElementById("titreMoisB").textContent = lblC;\
-  document.getElementById("titreMois1").textContent = lblC;\
-  document.getElementById("titreMois2").textContent = lblC;\
-  document.getElementById("titreMois3").textContent = lblC;\
-\
-  const md = cibleData();\
-  const totPrevuM = totPrevu(md);\
-  const totRevM = totRev(md);\
-  const totRealM = totReal(md);\
-\
-  document.getElementById("kpis").innerHTML = [\
-    ["Revenus \'97 " + lblC, fmt(totRevM), "#059669"],\
-    ["Enveloppes allou\'e9es", fmt(totPrevuM), "#334155"],\
-    ["D\'e9penses r\'e9alis\'e9es", fmt(totRealM), "#e11d48"],\
-    ["Non allou\'e9 (marge)", fmt(totRevM - totPrevuM), totRevM - totPrevuM >= 0 ? "#059669" : "#e11d48"],\
-    ["Disponible en fin de mois", fmt(totRevM - totRealM), totRevM - totRealM >= 0 ? "#059669" : "#e11d48"],\
-  ].map(([t,v,c]) => `<div class="card kpi"><div class="t">$\{t\}</div><div class="v" style="color:$\{c\}">$\{v\}</div></div>`).join("");\
-\
-  // Enveloppes \'e9ditables\
-  document.getElementById("budgets").innerHTML = CATS.map(c => \{\
-    const b = md.budgets[c.id] || 0;\
-    const cons = consCat(md, c.id);\
-    return `<div class="budgetcat">\
-      <span class="lbl"><span class="pill" style="background:$\{c.color\}">&nbsp;</span>$\{c.label\}</span>\
-      <input type="number" min="0" step="1" value="$\{b || ""\}" placeholder="0"\
-        onchange="setBudget('$\{c.id\}', this.value)" />\
-      <span class="cons">consomm\'e9 $\{fmt(cons)\}</span>\
-    </div>`;\
-  \}).join("");\
-  document.getElementById("totBudgets").textContent = fmt(totPrevuM);\
-\
-  // Consomm\'e9 vs enveloppe\
-  const max = Math.max(1, ...CATS.map(c => Math.max(md.budgets[c.id] || 0, consCat(md, c.id))));\
-  document.getElementById("bars").innerHTML = CATS.map(c => \{\
-    const b = md.budgets[c.id] || 0;\
-    const cons = consCat(md, c.id);\
-    if (!b && !cons) return "";\
-    const resteCat = b - cons;\
-    return `<div class="row">\
-      <div class="lbl">$\{c.label\}</div>\
-      <div class="track">\
-        <div class="fill thin" style="width:$\{(b/max*100).toFixed(1)\}%"></div>\
-        <div class="fill" style="width:$\{(cons/max*100).toFixed(1)\}%;background:$\{cons > b ? "#e11d48" : c.color\}"></div>\
-      </div>\
-      <div class="val $\{resteCat < 0 ? "neg" : "pos"\}">$\{fmt(resteCat)\}</div>\
-    </div>`;\
-  \}).join("") || "<p class='note'>Aucune enveloppe ni d\'e9pense ce mois-ci.</p>";\
-\
-  // \'c9quilibre du mois : explicite + visage\
-  const nonAlloue = totRevM - totPrevuM;\
-  const dispo = totRevM - totRealM;\
-  const taux = totRevM > 0 ? Math.max(0, Math.min(100, nonAlloue / totRevM * 100)) : 0;\
-  const visage = dispo >= 0\
-    ? `<svg viewBox="0 0 100 100" width="90" height="90" aria-label="Budget \'e9quilibr\'e9">\
-        <circle cx="50" cy="50" r="45" fill="#ecfdf5" stroke="#059669" stroke-width="5"/>\
-        <circle cx="34" cy="40" r="6" fill="#059669"/>\
-        <circle cx="66" cy="40" r="6" fill="#059669"/>\
-        <path d="M28 62 Q50 82 72 62" stroke="#059669" stroke-width="5" fill="none" stroke-linecap="round"/>\
-        $\{dispo > 0.2 * totRevM ? `<path d="M12 28 Q20 12 34 16" stroke="#059669" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M88 28 Q80 12 66 16" stroke="#059669" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>` : ""\}\
-       </svg>`\
-    : `<svg viewBox="0 0 100 100" width="90" height="90" aria-label="Budget en d\'e9ficit">\
-        <circle cx="50" cy="50" r="45" fill="#fff1f2" stroke="#e11d48" stroke-width="5"/>\
-        <path d="M27 34 L41 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>\
-        <path d="M41 34 L27 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>\
-        <path d="M59 34 L73 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>\
-        <path d="M73 34 L59 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>\
-        <path d="M30 70 Q50 56 70 70" stroke="#e11d48" stroke-width="5" fill="none" stroke-linecap="round"/>\
-        <path d="M20 86 Q12 84 10 78" stroke="#e11d48" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>\
-        <path d="M80 86 Q88 84 90 78" stroke="#e11d48" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>\
-       </svg>`;\
-  const msgVisage = dispo >= 0\
-    ? (dispo > 0.2 * totRevM ? "Excellent : belle marge d'\'e9pargne !" : "\uc0\u10004 \u65039  Vos enveloppes tiennent dans vos revenus.")\
-    : "\uc0\u9888 \u65039  Les d\'e9penses r\'e9alis\'e9es d\'e9passent vos revenus : \'e0 ajuster.";\
-  document.getElementById("ecart").innerHTML = `\
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">\
-      <div style="flex-shrink:0">$\{visage\}</div>\
-      <table style="font-size:13px;flex:1;min-width:230px">\
-        <tbody>\
-          <tr><td>Revenus du mois</td><td class="num">$\{fmt(totRevM)\}</td></tr>\
-          <tr><td>D\'e9pense totale du mois</td><td class="num">$\{fmt(totRealM)\}</td></tr>\
-          <tr><td>Enveloppes allou\'e9es</td><td class="num">$\{fmt(totPrevuM)\}</td></tr>\
-          <tr><td>Somme utilis\'e9e des enveloppes</td><td class="num">$\{fmt(Math.min(totRealM, totPrevuM))\}$\{totRealM > totPrevuM ? " <span class='neg'>(d\'e9passement : " + fmt(totRealM - totPrevuM) + ")</span>" : ""\}</td></tr>\
-          <tr style="border-top:1px solid #e2e8f0"><td><strong>Disponible fin de mois</strong></td><td class="num"><strong class="$\{dispo >= 0 ? "pos" : "neg"\}">$\{fmt(dispo)\}</strong></td></tr>\
-          <tr style="border-top:1px solid #e2e8f0"><td><strong>Marge d'\'e9pargne</strong></td><td class="num"><strong class="$\{nonAlloue >= 0 ? "pos" : "neg"\}">$\{fmt(nonAlloue)\}</strong></td></tr>\
-        </tbody>\
-      </table>\
-    </div>\
-    <div style="margin-top:12px">\
-      <div class="gauge"><div style="width:$\{taux\}%"></div></div>\
-      <p class="note">$\{taux.toFixed(1)\} % des revenus non allou\'e9s \'97 visez 10\'9620 % pour l'\'e9pargne de pr\'e9caution.</p>\
-    </div>\
-    <p class="note">$\{msgVisage\}</p>`;\
-\
-  // Courbe des d\'e9penses par cat\'e9gorie et par mois + m\'e9mo\
-  renderCourbeCats();\
-  renderMemo();\
-\
-  // Revenus\
-  document.getElementById("listeRevenus").innerHTML = md.revenus.map(r => `\
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#ecfdf5;border-radius:8px;padding:7px 12px;margin-top:6px;font-size:13px">\
-      <span>$\{esc(r.label)\}</span>\
-      <span><strong style="color:#059669">$\{fmt(r.montant)\}</strong>\
-      <button class="del" onclick="delRev($\{r.id\})">\uc0\u10005 </button></span>\
-    </div>`).join("");\
-\
-  // Pav\'e9s d\'e9pens\'e9s par cat\'e9gorie : liste + somme\
-  document.getElementById("catListes").innerHTML = CATS.map(c => \{\
-    const liste = md.depenses.filter(d => d.cat === c.id);\
-    const somme = liste.reduce((s,d) => s + d.montant, 0);\
-    if (!liste.length) return "";\
-    return `<div class="card" style="padding:12px;border-color:$\{c.color\}55;background:#fafbfc">\
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">\
-        <span class="pill" style="background:$\{c.color\}">$\{c.label\}</span>\
-        <span class="note" style="margin:0">$\{liste.length\} d\'e9pense$\{liste.length > 1 ? "s" : ""\}</span>\
-      </div>\
-      $\{liste.map(d => `<div style="display:flex;justify-content:space-between;gap:6px;padding:4px 0;font-size:13px;border-top:1px solid #f1f5f9">\
-          <span style="color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">$\{esc(d.label)\}</span>\
-          <span style="display:flex;align-items:center;gap:6px;flex-shrink:0">\
-            <strong style="color:#334155">$\{fmt(d.montant)\}</strong>\
-            <button class="del" onclick="delDep($\{d.id\})">\uc0\u10005 </button>\
-          </span>\
-        </div>`).join("")\}\
-      <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:2px;border-top:2px solid $\{c.color\}33;font-weight:700;font-size:14px">\
-        <span style="color:#475569">Total</span><span style="color:$\{c.color\}">$\{fmt(somme)\}</span>\
-      </div>\
-    </div>`;\
-  \}).join("") || `<p class="note">Aucune d\'e9pense saisie ce mois-ci.</p>`;\
-\
-  // Cumuls sur la p\'e9riode choisie\
-  const cumD = document.getElementById("cumDebut").value || KEYS[0];\
-  const cumF = document.getElementById("cumFin").value || KEYS[KEYS.length-1];\
-  const iD = Math.max(0, KEYS.indexOf(cumD));\
-  const iF = Math.min(KEYS.length-1, Math.max(0, KEYS.indexOf(cumF)));\
-  const periodeCum = KEYS.slice(Math.min(iD,iF), Math.max(iD,iF)+1);\
-  const cumRows = CATS.map(c => \{\
-    let sumB = 0, sumD = 0;\
-    periodeCum.forEach(k => \{\
-      const m = cibleDataDe(k);\
-      sumB += Number(m.budgets[c.id]) || 0;\
-      sumD += consCat(m, c.id);\
-    \});\
-    return \{c, sumB, sumD\};\
-  \}).filter(r => r.sumB > 0 || r.sumD > 0);\
-  const totCumB = cumRows.reduce((s,r) => s + r.sumB, 0);\
-  const totCumD = cumRows.reduce((s,r) => s + r.sumD, 0);\
-  const maxCum = Math.max(1, ...cumRows.map(r => Math.max(r.sumB, r.sumD)));\
-  document.getElementById("cumuls").innerHTML = `$\{cumRows.length ? `\
-    <table>\
-      <thead><tr><th>Cat\'e9gorie</th><th class="num">Enveloppes cumul\'e9es</th><th class="num">D\'e9penses cumul\'e9es</th><th class="num">\'c9cart</th><th style="width:130px"></th></tr></thead>\
-      <tbody>\
-        $\{cumRows.map(r => \{\
-          const ecart = r.sumB - r.sumD;\
-          return `<tr>\
-            <td><span class="pill" style="background:$\{r.c.color\}">$\{r.c.label\}</span></td>\
-            <td class="num">$\{fmt(r.sumB)\}</td>\
-            <td class="num">$\{fmt(r.sumD)\}</td>\
-            <td class="num"><strong class="$\{ecart < 0 ? "neg" : "pos"\}">$\{fmt(ecart)\}</strong></td>\
-            <td>\
-              <div style="position:relative;height:14px;background:#f1f5f9;border-radius:6px;overflow:hidden">\
-                <div style="position:absolute;top:0;left:0;height:7px;width:$\{(r.sumB/maxCum*100).toFixed(1)\}%;background:#c7d2fe"></div>\
-                <div style="position:absolute;bottom:0;left:0;height:7px;width:$\{(r.sumD/maxCum*100).toFixed(1)\}%;background:$\{r.c.color\}"></div>\
-              </div>\
-            </td>\
-          </tr>`;\
-        \}).join("")\}\
-        <tr style="border-top:2px solid #e2e8f0">\
-          <td><strong>Total</strong></td>\
-          <td class="num"><strong>$\{fmt(totCumB)\}</strong></td>\
-          <td class="num"><strong>$\{fmt(totCumD)\}</strong></td>\
-          <td class="num"><strong class="$\{totCumB - totCumD < 0 ? "neg" : "pos"\}">$\{fmt(totCumB - totCumD)\}</strong></td>\
-          <td></td>\
-        </tr>\
-      </tbody>\
-    </table>` : `<p class="note">Aucune enveloppe ni d\'e9pense sur la p\'e9riode.</p>`\}`;\
-\
-  // Vue mensuelle (p\'e9riode choisie)\
-  let cumulReste = 0;\
-  const vueD = document.getElementById("vueDebut").value || KEYS[0];\
-  const vueF = document.getElementById("vueFin").value || KEYS[KEYS.length-1];\
-  const ivD = Math.max(0, KEYS.indexOf(vueD));\
-  const ivF = Math.min(KEYS.length-1, Math.max(0, KEYS.indexOf(vueF)));\
-  const periodeVue = KEYS.slice(Math.min(ivD,ivF), Math.max(ivD,ivF)+1);\
-  document.getElementById("cal").innerHTML = periodeVue.map(k => \{\
-    const m = cibleDataDe(k);\
-    const rev = totRev(m);\
-    const prevu = totPrevu(m);\
-    const real = totReal(m);\
-    const r = rev - prevu;\
-    const soldeReel = rev - real;\
-    cumulReste += r;\
-    const vide = rev === 0 && prevu === 0 && real === 0;\
-    const sm = soldeReel >= 0 ? "\uc0\u55357 \u56898 " : "\u55357 \u56863 ";\
-    return `<div class="mcase $\{r < 0 ? "alerte" : ""\} $\{k === moisCourant ? "actif" : ""\}" onclick="setMois('$\{k\}')">\
-      <div class="mm">$\{labelMois(k)\}</div>\
-      <div class="md">$\{vide ? "\uc0\u10133  Pr\'e9voir ce mois" :\
-        "\uc0\u55357 \u56787 \u65039 <br>Revenus : <strong style='color:#059669'>" + fmt(rev) + "</strong>" +\
-        "<br>Enveloppes : <strong style='color:#6366f1'>" + fmt(prevu) + "</strong>" +\
-        "<br>D\'e9penses : <strong style='color:#e11d48'>" + fmt(real) + "</strong>" +\
-        "<br><strong>Marge d'\'e9pargne : </strong><strong class='" + (r < 0 ? "neg" : "pos") + "'>" + fmt(r) + "</strong>" +\
-        "<br><span class='note'>Solde r\'e9el " + sm + " : <strong class='" + (soldeReel < 0 ? "neg" : "pos") + "'>" + fmt(soldeReel) + "</strong></span>"\}</div>\
-    </div>`;\
-  \}).join("");\
-  document.getElementById("totalAnnee").innerHTML =\
-    `<p class="note" style="text-align:center">Cumul \'ab non allou\'e9 \'bb sur $\{periodeVue.length\} mois : <strong class="$\{cumulReste >= 0 ? "pos" : "neg"\}">$\{fmt(cumulReste)\}</strong></p>`;\
-\
-  renderCatAdmin();\
-\}\
-\
-document.getElementById("dCat").innerHTML = CATS.map(c => `<option value="$\{c.id\}">$\{c.label\}</option>`).join("");\
-function refreshCatSelects() \{\
-  const sel = document.getElementById("dCat");\
-  const cur = sel.value;\
-  sel.innerHTML = CATS.map(c => `<option value="$\{c.id\}">$\{c.label\}</option>`).join("");\
-  if (cur && CATS.some(c => c.id === cur)) sel.value = cur;\
-\}\
-refreshCatSelects();\
-document.getElementById("expDebut").innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===moisCourant?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-document.getElementById("expFin").innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===KEYS[KEYS.length-1]?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-refreshSelectsCumuls();\
-function updatePeriodeInfo() \{\
-  const dernier = KEYS[KEYS.length-1];\
-  document.getElementById("dernierMois").textContent = labelMois(dernier);\
-  document.getElementById("periodeInfo").textContent = "P\'e9riode couverte : " + labelMois(KEYS[0]) + " \uc0\u8594  " + labelMois(dernier) + " (" + KEYS.length + " mois). Chaque clic ajoute le mois suivant \'e0 la fin.";\
-  const dp = document.getElementById("debutPeriode");\
-  if (dp && !dp.value) dp.value = KEYS[0];\
-\}\
-function setDebutPeriode() \{\
-  const v = document.getElementById("debutPeriode").value;\
-  if (!v) return alert("Choisissez un mois de d\'e9part.");\
-  if (!/^\\d\{4\}-\\d\{2\}$/.test(v)) return alert("Format de mois invalide.");\
-  const nb = Math.max(12, KEYS.length);\
-  const base = parseKey(v);\
-  const nouveaux = Array.from(\{length:nb\}, (_,i) => key(new Date(base.getFullYear(), base.getMonth()+i, 1)));\
-  nouveaux.forEach(k => \{ if (!KEYS.includes(k)) KEYS.push(k); \});\
-  KEYS = nouveaux.concat(KEYS.filter(k => !nouveaux.includes(k)));\
-  KEYS.sort((a,b) => parseKey(a) - parseKey(b));\
-  data.keys = KEYS;\
-  if (!KEYS.includes(moisCourant)) moisCourant = KEYS[0];\
-  refreshSelectsMois();\
-  updatePeriodeInfo();\
-  save();\
-\}\
-function refreshSelectsCumuls() \{\
-  const selD = document.getElementById("cumDebut");\
-  const selF = document.getElementById("cumFin");\
-  const vD = selD.value || KEYS[0];\
-  const vF = selF.value || KEYS[KEYS.length-1];\
-  selD.innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===vD?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  selF.innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===vF?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  const wD = document.getElementById("vueDebut");\
-  const wF = document.getElementById("vueFin");\
-  const wvD = wD.value || KEYS[0];\
-  const wvF = wF.value || KEYS[KEYS.length-1];\
-  wD.innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===wvD?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-  wF.innerHTML = KEYS.map(k => `<option value="$\{k\}" $\{k===wvF?"selected":""\}>$\{labelMois(k)\}</option>`).join("");\
-\}\
-updatePeriodeInfo();\
-render();\
-// --- Auto-diagnostic visible sur la page ---\
-(function()\{\
-  const d = document.getElementById("diagjs");\
-  const nbMois = KEYS.length;\
-  const nbDep = Object.values(data.mois).reduce((s,m) => s + (m.depenses||[]).length, 0);\
-  const nbRev = Object.values(data.mois).reduce((s,m) => s + (m.revenus||[]).length, 0);\
-  d.style.background = "#059669";\
-  d.textContent = "\uc0\u10004  Script ex\'e9cut\'e9 : " + nbMois + " mois, " + nbDep + " d\'e9penses, " + nbRev + " revenus charg\'e9s. Mois affich\'e9 : " + labelCible() + (STOCKAGE_ACTIF ? "" : " \u9888 \u65039  Sauvegarde navigateur indisponible : vos modifications ne seront pas conserv\'e9es apr\'e8s fermeture \'97 pensez \'e0 exporter en JSON.");\
-\})();\
-</script>\
-</body>\
-</html>}
+  <div class="card">
+    <div class="navmois">
+      <button class="fleche" onclick="changeMois(-1)">‹</button>
+      <select id="selMois" style="width:auto;min-width:190px;margin:0;text-align:center;font-weight:600;color:#4f46e5" onchange="setMois(this.value)"></select>
+      <button class="fleche" onclick="changeMois(1)">›</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="ghost" onclick="recopierMois()">📄 Recopier le mois précédent</button>
+      <button class="ghost" onclick="recopierType()">📋 Recopier mon « mois type »</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="ghost" style="border-color:#6366f1;color:#4f46e5;font-weight:700" onclick="choisirImport('fusion')">📂 Importer JSON — FUSIONNER</button>
+      <button class="ghost" onclick="choisirImport('remplace')">📂 Importer JSON — REMPLACER</button>
+      <input type="file" accept=".json" id="importFichier" style="display:none" onchange="importJSON(this)">
+    </div>
+    <p class="note" style="text-align:center">Fusion : ajoute les données d'un autre appareil sans rien effacer. Remplace : restaure une sauvegarde complète.</p>
+    <p class="note" style="text-align:center">En début de mois : allouez vos enveloppes par catégorie. Ensuite : saisissez uniquement les dépenses réelles (libellé + catégorie + montant).</p>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>🗓️ Enveloppes de <span id="titreMoisB"></span></h2>
+      <div id="budgets"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;font-weight:600;color:#475569">
+        <span>Total alloué</span><span id="totBudgets"></span>
+      </div>
+      <p class="note">Laissez à 0 les catégories non utilisées ce mois-ci.</p>
+    </div>
+    <div class="card">
+      <h2>📅 Consommé vs enveloppe</h2>
+      <div class="bars" id="bars"></div>
+      <div class="note">Barre fine : enveloppe allouée · barre épaisse : dépenses réelles. Le chiffre de droite indique ce qu'il reste.</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>➕ Saisir une dépense — <span id="titreMois1"></span></h2>
+      <label>Libellé</label><input id="dLabel" placeholder="Ex : Courses Carrefour" />
+      <label>Catégorie</label><select id="dCat"></select>
+      <label>Montant réel (€)</label><input id="dMontant" type="number" min="0" step="0.01" />
+      <button class="btn" onclick="addDepense()">Ajouter</button>
+    </div>
+    <div class="card">
+      <h2>💰 Revenus — <span id="titreMois2"></span></h2>
+      <label>Libellé</label><input id="rLabel" placeholder="Ex : Salaire, prime, CAF…" />
+      <label>Montant (€)</label><input id="rMontant" type="number" min="0" step="0.01" />
+      <button class="btn" onclick="addRevenu()">Ajouter</button>
+      <div id="listeRevenus"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🧾 Dépensés par catégorie — <span id="titreMois3"></span></h2>
+    <p class="note" style="margin-top:0">Chaque pavé liste les dépenses du mois pour la catégorie, avec la somme totale. Cliquez sur ✕ pour supprimer une dépense.</p>
+    <div id="catListes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>
+  </div>
+
+  <div class="card">
+    <h2>📝 Mémo</h2>
+    <p class="note" style="margin-top:0">Votre liste libre : pense-bête, rappels, choses à vérifier… Chaque saisie devient un point de la liste. Les mémos voyagent avec l'export JSON.</p>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <input id="memoTexte" placeholder="Ex : vérifier le prélèvement assurance" style="flex:1;min-width:200px;margin-bottom:0" onkeydown="if(event.key==='Enter')addMemo()" />
+      <button class="ghost" onclick="addMemo()" style="margin-bottom:1px">➕ Ajouter</button>
+    </div>
+    <div id="memoListe" style="margin-top:12px"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>🎯 Équilibre du mois</h2>
+      <div id="ecart"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 Cumuls — du <select id="cumDebut" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> au <select id="cumFin" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select></h2>
+    <p class="note" style="margin-top:0">Enveloppes allouées et dépenses réalisées, cumulées sur la période choisie.</p>
+    <div id="cumuls" style="overflow-x:auto"></div>
+  </div>
+
+  <div class="card">
+    <h2>🗓️ Vue mensuelle — du <select id="vueDebut" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> au <select id="vueFin" onchange="render()" style="width:auto;display:inline-block;margin:0;padding:2px 6px;font-size:12px"></select> <span class="note" style="font-weight:400">(cliquez sur un mois pour l'ouvrir)</span></h2>
+    <div class="mois" id="cal"></div>
+    <div id="totalAnnee"></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 Dépenses par catégorie et par mois</h2>
+    <p class="note" style="margin-top:0">Une ligne par catégorie : total des dépenses de chaque mois de la période. Le trait pointillé repère le mois affiché.</p>
+    <div id="courbeCats" style="overflow-x:auto"></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ Gérer les catégories</h2>
+    <button class="ghost" onclick="toggleCatAdmin()" id="btnCatAdmin">▸ Afficher la gestion des catégories</button>
+    <div id="catAdmin" style="display:none;margin-top:14px">
+      <p class="note" style="margin-top:0">Renommez, ajoutez ou supprimez des catégories sans perdre vos données. Les enveloppes et dépenses suivent automatiquement.</p>
+      <div id="catAdminList"></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:10px">
+        <div style="flex:1;min-width:140px"><label>Nouvelle catégorie</label><input id="newCatLabel" placeholder="Ex : Animaux" style="margin-bottom:0" /></div>
+        <div><label>Couleur</label><input type="color" id="newCatColor" value="#f97316" style="width:46px;height:38px;padding:2px;margin-bottom:0" /></div>
+        <button class="ghost" onclick="addCat()" style="margin-bottom:1px">➕ Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>➕ Étendre la période</h2>
+    <p class="note" style="margin-top:0" id="periodeInfo"></p>
+    <button class="ghost" onclick="addMois()">➕ Ajouter un mois après <span id="dernierMois"></span></button>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:12px">
+      <div><label for="debutPeriode">Mois de départ de la période</label>
+        <input type="month" id="debutPeriode" style="margin-bottom:0" /></div>
+      <button class="ghost" onclick="setDebutPeriode()" style="margin-bottom:1px">🔄 Reconstruire la période depuis ce mois</button>
+    </div>
+    <p class="note" style="margin-bottom:0">Utile après un import JSON : si vos données semblent invisibles, indiquez ici le mois de départ de vos données (vos mois et dépenses sont conservés, seule la fenêtre affichée change).</p>
+  </div>
+
+  <div class="card">
+    <h2>📤 Export CSV vers un tableur (Excel, Numbers, LibreOffice)</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:160px">
+        <label>Du mois</label>
+        <select id="expDebut" style="margin-bottom:0"></select>
+      </div>
+      <div style="flex:1;min-width:160px">
+        <label>Au mois</label>
+        <select id="expFin" style="margin-bottom:0"></select>
+      </div>
+      <button class="ghost" onclick="exportCSV()" style="margin-bottom:1px">📄 Télécharger le CSV</button>
+    </div>
+    <p class="note">Sépareur « ; » compatible Excel / Numbers en français. Revenus, enveloppes et dépenses détaillées par mois.</p>
+  </div>
+
+  <button class="reset" onclick="exportJSON()">💾 Exporter mes données (JSON)</button>
+  <button class="reset" onclick="viderMois()">🗑️ Vider le mois affiché</button>
+  <button class="reset" onclick="resetAll()">🧹 Tout effacer (partir de zéro)</button>
+  <button class="reset" onclick="resetExemple()">🔄 Réinitialiser avec les valeurs d'exemple</button>
+  <button class="reset" onclick="window.print()">🖨️ Imprimer</button>
+</div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  const d = document.getElementById("diagjs");
+  if (d) { d.style.background = "#e11d48"; d.textContent = "⛔ Erreur JavaScript : " + msg + " (ligne " + line + ")"; }
+  return false;
+};
+const CATS_DEFAUT = [
+  {id:"logement",label:"Logement",color:"#6366f1"},
+  {id:"courses",label:"Courses / Alimentation",color:"#10b981"},
+  {id:"transport",label:"Transport",color:"#f59e0b"},
+  {id:"enfants",label:"Enfants",color:"#ec4899"},
+  {id:"sante",label:"Santé",color:"#06b6d4"},
+  {id:"loisirs",label:"Loisirs",color:"#8b5cf6"},
+  {id:"abonnements",label:"Abonnements",color:"#ef4444"},
+  {id:"impots",label:"Impôts / Taxes",color:"#78716c"},
+  {id:"dons",label:"Dons",color:"#f472b6"},
+  {id:"remboursements",label:"Remboursements emprunts",color:"#0ea5e9"},
+  {id:"travaux",label:"Travaux / Maintenance",color:"#d97706"},
+  {id:"epargne",label:"Épargne",color:"#84cc16"},
+  {id:"autre",label:"Autre",color:"#94a3b8"},
+];
+const NOMS_MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const fmt = n => new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const key = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+const parseKey = k => { const [y,m] = k.split("-").map(Number); return new Date(y, m-1, 1); };
+
+const DEBUT = new Date(2026, 9, 1); // période commençant en octobre 2026
+let KEYS = Array.from({length:12}, (_,i) => key(new Date(DEBUT.getFullYear(), DEBUT.getMonth()+i, 1)));
+
+// --- Structure d'un mois : { budgets: {catId: montant}, revenus: [...], depenses: [{id,cat,label,montant}] ---
+function moisVide() { return { budgets: {}, revenus: [], depenses: [] }; }
+
+function moisTypeDefaut() {
+  return {
+    budgets: {logement:950, courses:550, transport:220, enfants:170, abonnements:90, loisirs:150, epargne:200},
+    revenus: [
+      {id:1,label:"Salaire 1",montant:2300},
+      {id:2,label:"Salaire 2",montant:1400},
+      {id:3,label:"Allocations familiales",montant:140},
+    ],
+    depenses: [],
+  };
+}
+
+// Migration depuis l'ancien format (depenses avec prevu)
+function migrer(m) {
+  if (!m) return moisVide();
+  if (m.budgets) return m;
+  const nv = moisVide();
+  (m.depenses || []).forEach(d => {
+    const c = CATS.find(x => x.id === d.cat) || CATS[CATS.length-1];
+    nv.budgets[c.id] = (nv.budgets[c.id] || 0) + (d.prevu || 0);
+  });
+  nv.revenus = m.revenus || [];
+  nv.depenses = (m.depenses || []).map(d => ({id:d.id, cat:d.cat, label:d.label, montant:d.montant}));
+  return nv;
+}
+
+let data;
+// === VOS DONNÉES INTÉGRÉES (chargées automatiquement à l'ouverture) ===
+const DONNEES_INTEGREES = {"moisType":{"budgets":{},"revenus":[],"depenses":[]},"mois":{}};
+// --- Stockage blindé : fonctionne même si le navigateur bloque localStorage (fichiers locaux sur Safari/Chrome) ---
+const MEM_STOCKAGE = {};
+function lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return (k in MEM_STOCKAGE) ? MEM_STOCKAGE[k] : null; } }
+function lsSet(k, v) { MEM_STOCKAGE[k] = v; try { localStorage.setItem(k, v); } catch(e) {} }
+function lsDel(k) { delete MEM_STOCKAGE[k]; try { localStorage.removeItem(k); } catch(e) {} }
+const STOCKAGE_ACTIF = (() => { try { localStorage.setItem("__test__", "1"); localStorage.removeItem("__test__"); return true; } catch(e) { return false; } })();
+
+let stockees = null;
+try {
+  stockees = JSON.parse(lsGet("budgetFamilleMois")) || null;
+} catch(e) { stockees = null; }
+// Ce fichier EST vos données : on les charge toujours par défaut
+data = JSON.parse(JSON.stringify(DONNEES_INTEGREES));
+const stockeesOntVosDonnees = stockees && stockees.mois && stockees.mois["2026-10"] && stockees.mois["2026-10"].depenses && stockees.mois["2026-10"].depenses.some(d => d.label === "clinique");
+if (stockeesOntVosDonnees) {
+  // Le navigateur contient déjà vos données (peut-être plus récentes que l'instantané) → les garder
+  data = stockees;
+} else {
+  lsSet("budgetFamilleMois", JSON.stringify(data));
+}
+if (!data || !data.mois) {
+  const t = moisTypeDefaut();
+  data = { moisType: t, mois: { [KEYS[0]]: JSON.parse(JSON.stringify(t)) } };
+}
+data.moisType = migrer(data.moisType);
+Object.keys(data.mois).forEach(k => data.mois[k] = migrer(data.mois[k]));
+
+// Catégories personnalisables (stockées avec les données)
+let CATS = Array.isArray(data.cats) && data.cats.length ? data.cats : JSON.parse(JSON.stringify(CATS_DEFAUT));
+data.cats = CATS;
+
+// Période personnalisée (mois étendus au-delà des 12 premiers)
+if (Array.isArray(data.keys) && data.keys.length >= 12) KEYS = data.keys.slice();
+data.keys = KEYS;
+
+function addMois() {
+  const dernier = parseKey(KEYS[KEYS.length-1]);
+  const suivant = new Date(dernier.getFullYear(), dernier.getMonth()+1, 1);
+  const k = key(suivant);
+  if (KEYS.includes(k)) return alert("Ce mois existe déjà.");
+  KEYS.push(k);
+  data.keys = KEYS;
+  refreshSelectsMois();
+  updatePeriodeInfo();
+  save();
+}
+function refreshSelectsMois() {
+  document.getElementById("expDebut").innerHTML = KEYS.map(k => `<option value="${k}" ${k===moisCourant?"selected":""}>${labelMois(k)}</option>`).join("");
+  document.getElementById("expFin").innerHTML = KEYS.map(k => `<option value="${k}" ${k===KEYS[KEYS.length-1]?"selected":""}>${labelMois(k)}</option>`).join("");
+  refreshSelectsCumuls();
+}
+
+// À l'ouverture, afficher directement le mois en cours s'il fait partie de la période
+const MOIS_ACTUEL = key(new Date());
+let moisCourant = KEYS.includes(MOIS_ACTUEL) ? MOIS_ACTUEL : KEYS[0];
+const TYPE_KEY = "__type__";
+const estType = () => moisCourant === TYPE_KEY;
+function cibleData() { return estType() ? data.moisType : (data.mois[moisCourant] = data.mois[moisCourant] || moisVide()); }
+function labelCible() { return estType() ? "Mois type (modèle)" : labelMois(moisCourant); }
+function labelMois(k) {
+  const d = parseKey(k);
+  return NOMS_MOIS[d.getMonth()] + " " + d.getFullYear();
+}
+function totPrevu(m) { return CATS.reduce((s,c) => s + (Number(m.budgets[c.id]) || 0), 0); }
+function totRev(m) { return m.revenus.reduce((s,r) => s + r.montant, 0); }
+function totReal(m) { return m.depenses.reduce((s,d) => s + d.montant, 0); }
+function consCat(m, catId) { return m.depenses.filter(d => d.cat === catId).reduce((s,d) => s + d.montant, 0); }
+
+function save() { data.cats = CATS; data.keys = KEYS; lsSet("budgetFamilleMois", JSON.stringify(data)); refreshCatSelects(); render(); }
+
+// --- Gestion des catégories ---
+function toggleCatAdmin() {
+  const d = document.getElementById("catAdmin");
+  const open = d.style.display !== "none";
+  d.style.display = open ? "none" : "block";
+  document.getElementById("btnCatAdmin").textContent = open ? "▸ Afficher la gestion des catégories" : "▾ Masquer la gestion des catégories";
+}
+function renameCat(id, label) {
+  const c = CATS.find(x => x.id === id);
+  if (!c) return;
+  c.label = label.trim() || c.label;
+  save();
+}
+function addCat() {
+  const label = document.getElementById("newCatLabel").value.trim();
+  if (!label) return alert("Donnez un nom à la catégorie.");
+  let base = label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"").slice(0,12) || "cat";
+  let id = base, i = 1;
+  while (CATS.some(c => c.id === id)) id = base + (++i);
+  CATS.push({id, label, color: document.getElementById("newCatColor").value});
+  document.getElementById("newCatLabel").value = "";
+  save();
+}
+function delCat(id) {
+  const c = CATS.find(x => x.id === id);
+  if (!c) return;
+  if (CATS.length <= 1) return alert("Il faut garder au moins une catégorie.");
+  const autres = CATS.filter(x => x.id !== id);
+  const choix = prompt("Supprimer « " + c.label + " » ?\n\nLes dépenses et enveloppes de cette catégorie seront transférées vers : indiquez le numéro d'une catégorie ci-dessous (ou laissez vide pour les perdre).\n\n" + autres.map((x,i) => (i+1) + ". " + x.label).join("\n"));
+  if (choix === null) return;
+  const cible = autres[parseInt(choix,10) - 1];
+  const tousMois = [data.moisType, ...Object.values(data.mois)];
+  tousMois.forEach(m => {
+    if (!m || !m.depenses) return;
+    m.depenses.forEach(d => { if (d.cat === id) d.cat = cible ? cible.id : "autre_inconnu"; });
+    if (m.budgets && m.budgets[id] !== undefined) {
+      if (cible) m.budgets[cible.id] = (m.budgets[cible.id] || 0) + m.budgets[id];
+      delete m.budgets[id];
+    }
+  });
+  if (!cible) tousMois.forEach(m => { if (m && m.depenses) m.depenses = m.depenses.filter(d => d.cat !== "autre_inconnu"); });
+  CATS = CATS.filter(x => x.id !== id);
+  if (document.getElementById("dCat").value === id) document.getElementById("dCat").value = CATS[0].id;
+  save();
+  alert(cible ? "Catégorie supprimée. Ses dépenses et enveloppes ont été transférées vers « " + cible.label + " »." : "Catégorie supprimée.");
+}
+function renderCatAdmin() {
+  document.getElementById("catAdminList").innerHTML = CATS.map(c => `
+    <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-top:1px solid #f1f5f9">
+      <input type="color" value="${c.color}" onchange="recolorCat('${c.id}', this.value)" style="width:36px;height:32px;padding:2px;flex-shrink:0" title="Couleur" />
+      <input value="${esc(c.label)}" onchange="renameCat('${c.id}', this.value)" style="flex:1;margin:0" />
+      <button class="del" onclick="delCat('${c.id}')" title="Supprimer">🗑️</button>
+    </div>`).join("");
+}
+function recolorCat(id, color) {
+  const c = CATS.find(x => x.id === id);
+  if (c) { c.color = color; save(); }
+}
+
+function setMois(k) { moisCourant = k; render(); }
+function changeMois(dir) {
+  if (estType()) { moisCourant = KEYS[dir > 0 ? 0 : 0]; return render(); }
+  const i = Math.max(0, Math.min(KEYS.length-1, KEYS.indexOf(moisCourant) + dir));
+  moisCourant = KEYS[i]; render();
+}
+function recopierMois() {
+  if (estType()) return alert("Sélectionnez un mois réel pour recopier le mois précédent.");
+  const i = KEYS.indexOf(moisCourant);
+  if (i <= 0) return alert("Pas de mois précédent dans la période affichée.");
+  if (!confirm("Remplacer « " + labelMois(moisCourant) + " » par le contenu de « " + labelMois(KEYS[i-1]) + " » (enveloppes, revenus et dépenses) ?")) return;
+  data.mois[moisCourant] = JSON.parse(JSON.stringify(cibleDataDe(KEYS[i-1])));
+  save();
+}
+function cibleDataDe(k) { return data.mois[k] = data.mois[k] || moisVide(); }
+function recopierType() {
+  if (estType()) return alert("Sélectionnez d'abord un mois réel, puis recopiez le mois type dedans.");
+  const cible = cibleData();
+  const nbDep = cible.depenses.length;
+  let msg = "Appliquer votre « mois type » à « " + labelMois(moisCourant) + " » ?\n\n" +
+    "Les enveloppes et revenus du mois seront remplacés par ceux du mois type.\n";
+  if (nbDep > 0) {
+    msg += "\n✅ Les " + nbDep + " dépense(s) déjà saisies ce mois-ci seront CONSERVÉES.";
+    const full = confirm(msg + "\n\nOK = conserver les dépenses saisies\nAnnuler = choisir un remplacement complet");
+    if (full) {
+      cible.budgets = JSON.parse(JSON.stringify(data.moisType.budgets || {}));
+      cible.revenus = JSON.parse(JSON.stringify(data.moisType.revenus || []));
+      save();
+    } else {
+      if (confirm("⚠️ Remplacement COMPLET : enveloppes, revenus ET les " + nbDep + " dépense(s) saisies seront écrasés.\n\nConfirmer ?")) {
+        data.mois[moisCourant] = JSON.parse(JSON.stringify(data.moisType));
+        save();
+      }
+    }
+    return;
+  }
+  if (confirm(msg)) {
+    cible.budgets = JSON.parse(JSON.stringify(data.moisType.budgets || {}));
+    cible.revenus = JSON.parse(JSON.stringify(data.moisType.revenus || []));
+    save();
+  }
+}
+
+function addRevenu() {
+  const label = document.getElementById("rLabel").value.trim();
+  const montant = parseFloat(document.getElementById("rMontant").value);
+  if (!label || isNaN(montant)) return alert("Renseignez un libellé et un montant valide.");
+  cibleData().revenus.push({id:Date.now(), label, montant});
+  document.getElementById("rLabel").value = ""; document.getElementById("rMontant").value = "";
+  save();
+}
+function addDepense() {
+  const label = document.getElementById("dLabel").value.trim();
+  const cat = document.getElementById("dCat").value;
+  const montant = parseFloat(document.getElementById("dMontant").value);
+  if (!label || isNaN(montant) || montant <= 0) return alert("Renseignez un libellé et un montant réel valide.");
+  cibleData().depenses.push({id:Date.now(), cat, label, montant});
+  document.getElementById("dLabel").value = ""; document.getElementById("dMontant").value = "";
+  save();
+}
+function delRev(id) { const m = cibleData(); m.revenus = m.revenus.filter(r => r.id !== id); save(); }
+function delDep(id) { const m = cibleData(); m.depenses = m.depenses.filter(d => d.id !== id); save(); }
+function setBudget(catId, val) {
+  const m = cibleData();
+  const v = parseFloat(val);
+  if (isNaN(v) || v <= 0) delete m.budgets[catId]; else m.budgets[catId] = v;
+  save();
+}
+function resetAll() {
+  if (!confirm("Tout effacer et partir de zéro ?\n\n(Enveloppes, revenus, dépenses, mois type et tous les mois seront vidés — exportez vos données avant si besoin)")) return;
+  data = { moisType: moisVide(), mois: {} };
+  moisCourant = KEYS[0];
+  save();
+}
+function resetExemple() {
+  if (!confirm("Réinitialiser avec les valeurs d'exemple ?\n\n(Vos données actuelles seront perdues — exportez-les avant si besoin)")) return;
+  lsDel("budgetFamilleMois");
+  location.reload();
+}
+function viderMois() {
+  if (!confirm("Vider complètement « " + labelCible() + " » (enveloppes, revenus et dépenses) ?")) return;
+  if (estType()) data.moisType = moisVide();
+  else data.mois[moisCourant] = moisVide();
+  save();
+}
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "budget-famille.json";
+  a.click();
+}
+// Fusion de deux exports : ajoute ce qui manque (par id unique), ne supprime rien.
+// Idéal pour saisir des dépenses sur téléphone puis les ramener sur l'ordinateur.
+function fusionner(base, recu) {
+  const fusionListe = (a, b) => {
+    const ids = new Set((a || []).map(x => x.id));
+    return (a || []).concat((b || []).filter(x => !ids.has(x.id)));
+  };
+  const fusionMois = (mb, mr) => {
+    mb = mb || moisVide(); mr = mr || moisVide();
+    const m = {
+      revenus: fusionListe(mb.revenus, mr.revenus),
+      depenses: fusionListe(mb.depenses, mr.depenses),
+      budgets: Object.assign({}, mb.budgets || {}),
+    };
+    Object.keys(mr.budgets || {}).forEach(k => {
+      m.budgets[k] = Math.max(Number(m.budgets[k]) || 0, Number(mr.budgets[k]) || 0);
+    });
+    return m;
+  };
+  const res = { mois: {}, keys: [] };
+  res.moisType = fusionMois(base.moisType, recu.moisType);
+  const tousMois = new Set([...(base.keys || []), ...Object.keys(base.mois || {}), ...(recu.keys || []), ...Object.keys(recu.mois || {})]);
+  tousMois.forEach(k => res.mois[k] = fusionMois(base.mois && base.mois[k], recu.mois && recu.mois[k]));
+  res.keys = Array.from(new Set([...(recu.keys || []), ...(base.keys || [])])).sort();
+  if (res.keys.length < 12) { /* période minimale conservée via KEYS plus bas */ }
+  res.cats = Array.isArray(recu.cats) && recu.cats.length ? recu.cats : base.cats;
+  res.memo = fusionListe(base.memo || [], recu.memo || []);
+  return res;
+}
+// Mémo : ajout et suppression
+function addMemo() {
+  const inp = document.getElementById("memoTexte");
+  if (!inp) return;
+  const t = inp.value.trim();
+  if (!t) return;
+  if (!Array.isArray(data.memo)) data.memo = [];
+  data.memo.push({id: Date.now(), texte: t});
+  inp.value = "";
+  save();
+}
+function delMemo(id) {
+  data.memo = (data.memo || []).filter(m => m.id !== id);
+  save();
+}
+let MODE_IMPORT = "fusion";
+function choisirImport(mode) {
+  MODE_IMPORT = mode;
+  document.getElementById("importFichier").click();
+}
+function importJSON(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed.mois) throw 0;
+      const fusion = MODE_IMPORT === "fusion";
+      if (fusion) {
+        data = fusionner(data, parsed);
+      } else {
+        data = parsed;
+      }
+      CATS = Array.isArray(data.cats) && data.cats.length ? data.cats : JSON.parse(JSON.stringify(CATS_DEFAUT));
+      data.cats = CATS;
+      if (Array.isArray(data.keys) && data.keys.length >= 12) KEYS = data.keys.slice();
+      data.keys = KEYS;
+      if (!KEYS.includes(moisCourant)) moisCourant = KEYS[0];
+      refreshCatSelects();
+      refreshSelectsMois();
+      updatePeriodeInfo();
+      data.moisType = migrer(data.moisType);
+      Object.keys(data.mois).forEach(k => data.mois[k] = migrer(data.mois[k]));
+      save();
+    } catch(e) { alert("Fichier invalide."); }
+  };
+  reader.readAsText(f);
+}
+function exportCSV() {
+  const debut = document.getElementById("expDebut").value;
+  const fin = document.getElementById("expFin").value;
+  if (KEYS.indexOf(fin) < KEYS.indexOf(debut)) return alert("Le mois de fin doit être après le mois de début.");
+  const periode = KEYS.filter(k => KEYS.indexOf(k) >= KEYS.indexOf(debut) && KEYS.indexOf(k) <= KEYS.indexOf(fin));
+  const q = s => `"${String(s).replace(/"/g,'""')}"`;
+  const n = v => Number(v || 0).toLocaleString("fr-FR");
+  const lignes = [["Mois","Type","Catégorie","Libellé","Montant (€)"].join(";")];
+  periode.forEach(k => {
+    const m = cibleDataDe(k);
+    const lbl = labelMois(k);
+    m.revenus.forEach(r => lignes.push([q(lbl),"Revenu","-",q(r.label),n(r.montant)].join(";")));
+    CATS.forEach(c => {
+      if (m.budgets[c.id]) lignes.push([q(lbl),"Enveloppe",q(c.label),"Budget alloué",n(m.budgets[c.id])].join(";"));
+    });
+    m.depenses.forEach(d => {
+      const c = CATS.find(x => x.id === d.cat) || CATS[CATS.length-1];
+      lignes.push([q(lbl),"Dépense",q(c.label),q(d.label),n(d.montant)].join(";"));
+    });
+    lignes.push([q(lbl),"TOTAL","Total revenus","", n(totRev(m))].join(";"));
+    lignes.push([q(lbl),"TOTAL","Total enveloppes","", n(totPrevu(m))].join(";"));
+    lignes.push([q(lbl),"TOTAL","Total dépenses réalisées","", n(totReal(m))].join(";"));
+    lignes.push([q(lbl),"TOTAL","Non alloué (revenus − enveloppes)","", n(totRev(m) - totPrevu(m))].join(";"));
+    lignes.push("");
+  });
+  const csv = "\uFEFF" + lignes.join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `budget-famille_${debut}_${fin}.csv`;
+  a.click();
+}
+
+function render() {
+  // Courbe des dépenses par catégorie et par mois (toute la période)
+  function renderCourbeCats() {
+    const cont = document.getElementById("courbeCats");
+    if (!cont) return;
+    const n = KEYS.length;
+    const catsActives = CATS.filter(c => KEYS.some(k => consCat(cibleDataDe(k), c.id) > 0));
+    if (!catsActives.length) { cont.innerHTML = "<p class='note'>Aucune dépense sur la période.</p>"; return; }
+    const W = Math.max(640, n * 70), H = 270, padL = 48, padR = 14, padT = 14, padB = 32;
+    const maxV = Math.max(1, ...catsActives.flatMap(c => KEYS.map(k => consCat(cibleDataDe(k), c.id))));
+    const x = i => padL + (n === 1 ? 0 : i * (W - padL - padR) / (n - 1));
+    const y = v => H - padB - (v / maxV) * (H - padT - padB);
+    const grille = [0, 0.25, 0.5, 0.75, 1].map(t => {
+      const v = maxV * t;
+      return `<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" stroke="#f1f5f9"/>` +
+        `<text x="${padL - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#94a3b8">${Math.round(v)}</text>`;
+    }).join("");
+    const axeX = KEYS.map((k, i) => {
+      const d = parseKey(k);
+      const lbl = NOMS_MOIS[d.getMonth()].slice(0, 3) + " " + String(d.getFullYear()).slice(2);
+      return `<text x="${x(i).toFixed(1)}" y="${H - padB + 16}" text-anchor="middle" font-size="9" fill="#94a3b8">${lbl}</text>`;
+    }).join("");
+    const courbes = catsActives.map(c => {
+      const pts = KEYS.map((k, i) => `${x(i).toFixed(1)},${y(consCat(cibleDataDe(k), c.id)).toFixed(1)}`);
+      return `<polyline points="${pts.join(" ")}" fill="none" stroke="${c.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }).join("");
+    const idx = estType() ? -1 : KEYS.indexOf(moisCourant);
+    const curseur = idx >= 0 ? `<line x1="${x(idx).toFixed(1)}" y1="${padT}" x2="${x(idx).toFixed(1)}" y2="${H - padB}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>` : "";
+    const legende = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:12px">` +
+      catsActives.map(c => `<span style="display:flex;align-items:center;gap:5px;color:#475569"><span class="pill" style="background:${c.color}">&nbsp;</span>${c.label}</span>`).join("") + `</div>`;
+    cont.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${W}px;display:block" preserveAspectRatio="xMidYMid meet">${grille}${axeX}${courbes}${curseur}</svg>${legende}`;
+  }
+  // Mémo libre : chaque saisie devient un point de la liste
+  function renderMemo() {
+    const el = document.getElementById("memoListe");
+    if (!el) return;
+    const liste = Array.isArray(data.memo) ? data.memo : [];
+    el.innerHTML = liste.length ? liste.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #f1f5f9;font-size:13px">
+        <span style="display:flex;gap:7px;color:#475569"><span style="color:#6366f1">•</span>${esc(m.texte)}</span>
+        <button class="del" onclick="delMemo(${m.id})" title="Supprimer">✕</button>
+      </div>`).join("") : "<p class='note'>Aucun mémo pour l'instant.</p>";
+  }
+
+  const sel = document.getElementById("selMois");
+  sel.innerHTML = `<option value="${TYPE_KEY}" ${estType()?"selected":""}>🧩 Mois type (modèle)</option>` +
+    KEYS.map(k => `<option value="${k}" ${k===moisCourant?"selected":""}>${labelMois(k)}</option>`).join("");
+  const lblC = labelCible();
+  document.getElementById("titreMoisB").textContent = lblC;
+  document.getElementById("titreMois1").textContent = lblC;
+  document.getElementById("titreMois2").textContent = lblC;
+  document.getElementById("titreMois3").textContent = lblC;
+
+  const md = cibleData();
+  const totPrevuM = totPrevu(md);
+  const totRevM = totRev(md);
+  const totRealM = totReal(md);
+
+  document.getElementById("kpis").innerHTML = [
+    ["Revenus — " + lblC, fmt(totRevM), "#059669"],
+    ["Enveloppes allouées", fmt(totPrevuM), "#334155"],
+    ["Dépenses réalisées", fmt(totRealM), "#e11d48"],
+    ["Non alloué (marge)", fmt(totRevM - totPrevuM), totRevM - totPrevuM >= 0 ? "#059669" : "#e11d48"],
+    ["Disponible en fin de mois", fmt(totRevM - totRealM), totRevM - totRealM >= 0 ? "#059669" : "#e11d48"],
+  ].map(([t,v,c]) => `<div class="card kpi"><div class="t">${t}</div><div class="v" style="color:${c}">${v}</div></div>`).join("");
+
+  // Enveloppes éditables
+  document.getElementById("budgets").innerHTML = CATS.map(c => {
+    const b = md.budgets[c.id] || 0;
+    const cons = consCat(md, c.id);
+    return `<div class="budgetcat">
+      <span class="lbl"><span class="pill" style="background:${c.color}">&nbsp;</span>${c.label}</span>
+      <input type="number" min="0" step="1" value="${b || ""}" placeholder="0"
+        onchange="setBudget('${c.id}', this.value)" />
+      <span class="cons">consommé ${fmt(cons)}</span>
+    </div>`;
+  }).join("");
+  document.getElementById("totBudgets").textContent = fmt(totPrevuM);
+
+  // Consommé vs enveloppe
+  const max = Math.max(1, ...CATS.map(c => Math.max(md.budgets[c.id] || 0, consCat(md, c.id))));
+  document.getElementById("bars").innerHTML = CATS.map(c => {
+    const b = md.budgets[c.id] || 0;
+    const cons = consCat(md, c.id);
+    if (!b && !cons) return "";
+    const resteCat = b - cons;
+    return `<div class="row">
+      <div class="lbl">${c.label}</div>
+      <div class="track">
+        <div class="fill thin" style="width:${(b/max*100).toFixed(1)}%"></div>
+        <div class="fill" style="width:${(cons/max*100).toFixed(1)}%;background:${cons > b ? "#e11d48" : c.color}"></div>
+      </div>
+      <div class="val ${resteCat < 0 ? "neg" : "pos"}">${fmt(resteCat)}</div>
+    </div>`;
+  }).join("") || "<p class='note'>Aucune enveloppe ni dépense ce mois-ci.</p>";
+
+  // Équilibre du mois : explicite + visage
+  const nonAlloue = totRevM - totPrevuM;
+  const dispo = totRevM - totRealM;
+  const taux = totRevM > 0 ? Math.max(0, Math.min(100, nonAlloue / totRevM * 100)) : 0;
+  const visage = dispo >= 0
+    ? `<svg viewBox="0 0 100 100" width="90" height="90" aria-label="Budget équilibré">
+        <circle cx="50" cy="50" r="45" fill="#ecfdf5" stroke="#059669" stroke-width="5"/>
+        <circle cx="34" cy="40" r="6" fill="#059669"/>
+        <circle cx="66" cy="40" r="6" fill="#059669"/>
+        <path d="M28 62 Q50 82 72 62" stroke="#059669" stroke-width="5" fill="none" stroke-linecap="round"/>
+        ${dispo > 0.2 * totRevM ? `<path d="M12 28 Q20 12 34 16" stroke="#059669" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M88 28 Q80 12 66 16" stroke="#059669" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>` : ""}
+       </svg>`
+    : `<svg viewBox="0 0 100 100" width="90" height="90" aria-label="Budget en déficit">
+        <circle cx="50" cy="50" r="45" fill="#fff1f2" stroke="#e11d48" stroke-width="5"/>
+        <path d="M27 34 L41 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>
+        <path d="M41 34 L27 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>
+        <path d="M59 34 L73 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>
+        <path d="M73 34 L59 46" stroke="#e11d48" stroke-width="5" stroke-linecap="round"/>
+        <path d="M30 70 Q50 56 70 70" stroke="#e11d48" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M20 86 Q12 84 10 78" stroke="#e11d48" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+        <path d="M80 86 Q88 84 90 78" stroke="#e11d48" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.6"/>
+       </svg>`;
+  const msgVisage = dispo >= 0
+    ? (dispo > 0.2 * totRevM ? "Excellent : belle marge d'épargne !" : "✔️ Vos enveloppes tiennent dans vos revenus.")
+    : "⚠️ Les dépenses réalisées dépassent vos revenus : à ajuster.";
+  document.getElementById("ecart").innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex-shrink:0">${visage}</div>
+      <table style="font-size:13px;flex:1;min-width:230px">
+        <tbody>
+          <tr><td>Revenus du mois</td><td class="num">${fmt(totRevM)}</td></tr>
+          <tr><td>Dépense totale du mois</td><td class="num">${fmt(totRealM)}</td></tr>
+          <tr><td>Enveloppes allouées</td><td class="num">${fmt(totPrevuM)}</td></tr>
+          <tr><td>Somme utilisée des enveloppes</td><td class="num">${fmt(Math.min(totRealM, totPrevuM))}${totRealM > totPrevuM ? " <span class='neg'>(dépassement : " + fmt(totRealM - totPrevuM) + ")</span>" : ""}</td></tr>
+          <tr style="border-top:1px solid #e2e8f0"><td><strong>Disponible fin de mois</strong></td><td class="num"><strong class="${dispo >= 0 ? "pos" : "neg"}">${fmt(dispo)}</strong></td></tr>
+          <tr style="border-top:1px solid #e2e8f0"><td><strong>Marge d'épargne</strong></td><td class="num"><strong class="${nonAlloue >= 0 ? "pos" : "neg"}">${fmt(nonAlloue)}</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px">
+      <div class="gauge"><div style="width:${taux}%"></div></div>
+      <p class="note">${taux.toFixed(1)} % des revenus non alloués — visez 10–20 % pour l'épargne de précaution.</p>
+    </div>
+    <p class="note">${msgVisage}</p>`;
+
+  // Courbe des dépenses par catégorie et par mois + mémo
+  renderCourbeCats();
+  renderMemo();
+
+  // Revenus
+  document.getElementById("listeRevenus").innerHTML = md.revenus.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#ecfdf5;border-radius:8px;padding:7px 12px;margin-top:6px;font-size:13px">
+      <span>${esc(r.label)}</span>
+      <span><strong style="color:#059669">${fmt(r.montant)}</strong>
+      <button class="del" onclick="delRev(${r.id})">✕</button></span>
+    </div>`).join("");
+
+  // Pavés dépensés par catégorie : liste + somme
+  document.getElementById("catListes").innerHTML = CATS.map(c => {
+    const liste = md.depenses.filter(d => d.cat === c.id);
+    const somme = liste.reduce((s,d) => s + d.montant, 0);
+    if (!liste.length) return "";
+    return `<div class="card" style="padding:12px;border-color:${c.color}55;background:#fafbfc">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span class="pill" style="background:${c.color}">${c.label}</span>
+        <span class="note" style="margin:0">${liste.length} dépense${liste.length > 1 ? "s" : ""}</span>
+      </div>
+      ${liste.map(d => `<div style="display:flex;justify-content:space-between;gap:6px;padding:4px 0;font-size:13px;border-top:1px solid #f1f5f9">
+          <span style="color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.label)}</span>
+          <span style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <strong style="color:#334155">${fmt(d.montant)}</strong>
+            <button class="del" onclick="delDep(${d.id})">✕</button>
+          </span>
+        </div>`).join("")}
+      <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:2px;border-top:2px solid ${c.color}33;font-weight:700;font-size:14px">
+        <span style="color:#475569">Total</span><span style="color:${c.color}">${fmt(somme)}</span>
+      </div>
+    </div>`;
+  }).join("") || `<p class="note">Aucune dépense saisie ce mois-ci.</p>`;
+
+  // Cumuls sur la période choisie
+  const cumD = document.getElementById("cumDebut").value || KEYS[0];
+  const cumF = document.getElementById("cumFin").value || KEYS[KEYS.length-1];
+  const iD = Math.max(0, KEYS.indexOf(cumD));
+  const iF = Math.min(KEYS.length-1, Math.max(0, KEYS.indexOf(cumF)));
+  const periodeCum = KEYS.slice(Math.min(iD,iF), Math.max(iD,iF)+1);
+  const cumRows = CATS.map(c => {
+    let sumB = 0, sumD = 0;
+    periodeCum.forEach(k => {
+      const m = cibleDataDe(k);
+      sumB += Number(m.budgets[c.id]) || 0;
+      sumD += consCat(m, c.id);
+    });
+    return {c, sumB, sumD};
+  }).filter(r => r.sumB > 0 || r.sumD > 0);
+  const totCumB = cumRows.reduce((s,r) => s + r.sumB, 0);
+  const totCumD = cumRows.reduce((s,r) => s + r.sumD, 0);
+  const maxCum = Math.max(1, ...cumRows.map(r => Math.max(r.sumB, r.sumD)));
+  document.getElementById("cumuls").innerHTML = `${cumRows.length ? `
+    <table>
+      <thead><tr><th>Catégorie</th><th class="num">Enveloppes cumulées</th><th class="num">Dépenses cumulées</th><th class="num">Écart</th><th style="width:130px"></th></tr></thead>
+      <tbody>
+        ${cumRows.map(r => {
+          const ecart = r.sumB - r.sumD;
+          return `<tr>
+            <td><span class="pill" style="background:${r.c.color}">${r.c.label}</span></td>
+            <td class="num">${fmt(r.sumB)}</td>
+            <td class="num">${fmt(r.sumD)}</td>
+            <td class="num"><strong class="${ecart < 0 ? "neg" : "pos"}">${fmt(ecart)}</strong></td>
+            <td>
+              <div style="position:relative;height:14px;background:#f1f5f9;border-radius:6px;overflow:hidden">
+                <div style="position:absolute;top:0;left:0;height:7px;width:${(r.sumB/maxCum*100).toFixed(1)}%;background:#c7d2fe"></div>
+                <div style="position:absolute;bottom:0;left:0;height:7px;width:${(r.sumD/maxCum*100).toFixed(1)}%;background:${r.c.color}"></div>
+              </div>
+            </td>
+          </tr>`;
+        }).join("")}
+        <tr style="border-top:2px solid #e2e8f0">
+          <td><strong>Total</strong></td>
+          <td class="num"><strong>${fmt(totCumB)}</strong></td>
+          <td class="num"><strong>${fmt(totCumD)}</strong></td>
+          <td class="num"><strong class="${totCumB - totCumD < 0 ? "neg" : "pos"}">${fmt(totCumB - totCumD)}</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>` : `<p class="note">Aucune enveloppe ni dépense sur la période.</p>`}`;
+
+  // Vue mensuelle (période choisie)
+  let cumulReste = 0;
+  const vueD = document.getElementById("vueDebut").value || KEYS[0];
+  const vueF = document.getElementById("vueFin").value || KEYS[KEYS.length-1];
+  const ivD = Math.max(0, KEYS.indexOf(vueD));
+  const ivF = Math.min(KEYS.length-1, Math.max(0, KEYS.indexOf(vueF)));
+  const periodeVue = KEYS.slice(Math.min(ivD,ivF), Math.max(ivD,ivF)+1);
+  document.getElementById("cal").innerHTML = periodeVue.map(k => {
+    const m = cibleDataDe(k);
+    const rev = totRev(m);
+    const prevu = totPrevu(m);
+    const real = totReal(m);
+    const r = rev - prevu;
+    const soldeReel = rev - real;
+    cumulReste += r;
+    const vide = rev === 0 && prevu === 0 && real === 0;
+    const sm = soldeReel >= 0 ? "🙂" : "😟";
+    return `<div class="mcase ${r < 0 ? "alerte" : ""} ${k === moisCourant ? "actif" : ""}" onclick="setMois('${k}')">
+      <div class="mm">${labelMois(k)}</div>
+      <div class="md">${vide ? "➕ Prévoir ce mois" :
+        "🗓️<br>Revenus : <strong style='color:#059669'>" + fmt(rev) + "</strong>" +
+        "<br>Enveloppes : <strong style='color:#6366f1'>" + fmt(prevu) + "</strong>" +
+        "<br>Dépenses : <strong style='color:#e11d48'>" + fmt(real) + "</strong>" +
+        "<br><strong>Marge d'épargne : </strong><strong class='" + (r < 0 ? "neg" : "pos") + "'>" + fmt(r) + "</strong>" +
+        "<br><span class='note'>Solde réel " + sm + " : <strong class='" + (soldeReel < 0 ? "neg" : "pos") + "'>" + fmt(soldeReel) + "</strong></span>"}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("totalAnnee").innerHTML =
+    `<p class="note" style="text-align:center">Cumul « non alloué » sur ${periodeVue.length} mois : <strong class="${cumulReste >= 0 ? "pos" : "neg"}">${fmt(cumulReste)}</strong></p>`;
+
+  renderCatAdmin();
+}
+
+document.getElementById("dCat").innerHTML = CATS.map(c => `<option value="${c.id}">${c.label}</option>`).join("");
+function refreshCatSelects() {
+  const sel = document.getElementById("dCat");
+  const cur = sel.value;
+  sel.innerHTML = CATS.map(c => `<option value="${c.id}">${c.label}</option>`).join("");
+  if (cur && CATS.some(c => c.id === cur)) sel.value = cur;
+}
+refreshCatSelects();
+document.getElementById("expDebut").innerHTML = KEYS.map(k => `<option value="${k}" ${k===moisCourant?"selected":""}>${labelMois(k)}</option>`).join("");
+document.getElementById("expFin").innerHTML = KEYS.map(k => `<option value="${k}" ${k===KEYS[KEYS.length-1]?"selected":""}>${labelMois(k)}</option>`).join("");
+refreshSelectsCumuls();
+function updatePeriodeInfo() {
+  const dernier = KEYS[KEYS.length-1];
+  document.getElementById("dernierMois").textContent = labelMois(dernier);
+  document.getElementById("periodeInfo").textContent = "Période couverte : " + labelMois(KEYS[0]) + " → " + labelMois(dernier) + " (" + KEYS.length + " mois). Chaque clic ajoute le mois suivant à la fin.";
+  const dp = document.getElementById("debutPeriode");
+  if (dp && !dp.value) dp.value = KEYS[0];
+}
+function setDebutPeriode() {
+  const v = document.getElementById("debutPeriode").value;
+  if (!v) return alert("Choisissez un mois de départ.");
+  if (!/^\d{4}-\d{2}$/.test(v)) return alert("Format de mois invalide.");
+  const nb = Math.max(12, KEYS.length);
+  const base = parseKey(v);
+  const nouveaux = Array.from({length:nb}, (_,i) => key(new Date(base.getFullYear(), base.getMonth()+i, 1)));
+  nouveaux.forEach(k => { if (!KEYS.includes(k)) KEYS.push(k); });
+  KEYS = nouveaux.concat(KEYS.filter(k => !nouveaux.includes(k)));
+  KEYS.sort((a,b) => parseKey(a) - parseKey(b));
+  data.keys = KEYS;
+  if (!KEYS.includes(moisCourant)) moisCourant = KEYS[0];
+  refreshSelectsMois();
+  updatePeriodeInfo();
+  save();
+}
+function refreshSelectsCumuls() {
+  const selD = document.getElementById("cumDebut");
+  const selF = document.getElementById("cumFin");
+  const vD = selD.value || KEYS[0];
+  const vF = selF.value || KEYS[KEYS.length-1];
+  selD.innerHTML = KEYS.map(k => `<option value="${k}" ${k===vD?"selected":""}>${labelMois(k)}</option>`).join("");
+  selF.innerHTML = KEYS.map(k => `<option value="${k}" ${k===vF?"selected":""}>${labelMois(k)}</option>`).join("");
+  const wD = document.getElementById("vueDebut");
+  const wF = document.getElementById("vueFin");
+  const wvD = wD.value || KEYS[0];
+  const wvF = wF.value || KEYS[KEYS.length-1];
+  wD.innerHTML = KEYS.map(k => `<option value="${k}" ${k===wvD?"selected":""}>${labelMois(k)}</option>`).join("");
+  wF.innerHTML = KEYS.map(k => `<option value="${k}" ${k===wvF?"selected":""}>${labelMois(k)}</option>`).join("");
+}
+updatePeriodeInfo();
+render();
+// --- Auto-diagnostic visible sur la page ---
+(function(){
+  const d = document.getElementById("diagjs");
+  const nbMois = KEYS.length;
+  const nbDep = Object.values(data.mois).reduce((s,m) => s + (m.depenses||[]).length, 0);
+  const nbRev = Object.values(data.mois).reduce((s,m) => s + (m.revenus||[]).length, 0);
+  d.style.background = "#059669";
+  d.textContent = "✔ Script exécuté : " + nbMois + " mois, " + nbDep + " dépenses, " + nbRev + " revenus chargés. Mois affiché : " + labelCible() + (STOCKAGE_ACTIF ? "" : " ⚠️ Sauvegarde navigateur indisponible : vos modifications ne seront pas conservées après fermeture — pensez à exporter en JSON.");
+})();
+</script>
+</body>
+</html>
